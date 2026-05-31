@@ -1,0 +1,49 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String?  @unique
+  name      String?
+  books     Book[]
+  createdAt DateTime @default(now())
+}
+
+model Book {
+  id        String     @id @default(cuid())
+  ownerId   String
+  owner     User       @relation(fields: [ownerId], references: [id])
+  title     String
+  author    String?
+  coverPath String?
+  notes     String?
+  rating    Int?
+  status    BookStatus @default(WANT_TO_READ)
+  tags      Tag[]      @relation("BookTags")
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([ownerId])
+  @@index([ownerId, status])
+}
+
+enum BookStatus {
+  WANT_TO_READ
+  READING
+  READ
+}
+
+model Tag {
+  id      String @id @default(cuid())
+  ownerId String
+  name    String
+  books   Book[] @relation("BookTags")
+
+  @@unique([ownerId, name])
+}
