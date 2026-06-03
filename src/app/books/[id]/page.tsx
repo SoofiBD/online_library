@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { createBookService } from '@/lib/container'
 import { deleteBook } from '@/actions/books'
 import DeleteBookButton from '@/components/DeleteBookButton'
+import FadeIn from '@/components/FadeIn'
 
 const STATUS_LABELS: Record<string, string> = {
   WANT_TO_READ: 'Okumak İstiyorum',
@@ -30,14 +31,15 @@ export default async function BookDetailPage({ params }: Props) {
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6">
-      <Link
-        href="/"
-        className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 mb-6 inline-block"
-      >
-        ← Kütüphane
-      </Link>
+      <FadeIn stagger>
+        <Link
+          href="/"
+          className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 mb-6 inline-block"
+        >
+          ← Kütüphane
+        </Link>
 
-      <div className="flex gap-5 mb-6">
+        <div className="flex gap-5 mb-6">
         <div className="w-28 h-40 flex-shrink-0 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden">
           {book.coverPath ? (
             <Image
@@ -77,12 +79,13 @@ export default async function BookDetailPage({ params }: Props) {
       <div className="flex gap-3">
         <Link
           href={`/books/${id}/edit`}
-          className="flex-1 text-center bg-amber-500 hover:bg-amber-600 text-white py-2.5 rounded-lg font-medium text-sm transition-colors"
+          className="flex-1 text-center bg-amber-500 hover:bg-amber-600 text-white py-2.5 rounded-lg font-medium text-sm transition active:scale-95"
         >
           Düzenle
         </Link>
         <DeleteBookButton action={boundDelete} />
-      </div>
+        </div>
+      </FadeIn>
     </div>
   )
 }

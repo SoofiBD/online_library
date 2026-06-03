@@ -2,6 +2,9 @@
 
 import { useActionState } from 'react'
 import { useState, useRef } from 'react'
+import gsap from 'gsap'
+import { useGSAP } from '@gsap/react'
+import { DURATION, EASE, prefersReducedMotion } from '@/lib/animations'
 import StarRating from './StarRating'
 import type { Book } from '@/generated/prisma/client'
 import type { FormState } from '@/actions/books'
@@ -26,6 +29,20 @@ export default function BookForm({ action, book }: Props) {
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+  const previewRef = useRef<HTMLImageElement>(null)
+
+  useGSAP(
+    () => {
+      if (prefersReducedMotion() || !previewRef.current) return
+      gsap.from(previewRef.current, {
+        opacity: 0,
+        scale: 0.92,
+        duration: DURATION,
+        ease: EASE,
+      })
+    },
+    { dependencies: [coverPreview] },
+  )
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -69,6 +86,7 @@ export default function BookForm({ action, book }: Props) {
           ) : coverPreview ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
+              ref={previewRef}
               src={coverPreview}
               alt="Kapak önizleme"
               className="object-cover w-full h-full"
@@ -165,7 +183,7 @@ export default function BookForm({ action, book }: Props) {
       <button
         type="submit"
         disabled={isPending || uploading}
-        className="w-full bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-medium py-3 rounded-lg transition-colors"
+        className="w-full bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-medium py-3 rounded-lg transition active:scale-[0.98]"
       >
         {isPending ? 'Kaydediliyor...' : 'Kaydet'}
       </button>

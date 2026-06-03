@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { createBookService } from '@/lib/container'
-import BookList from '@/components/BookList'
+import AnimatedBookList from '@/components/AnimatedBookList'
 import SearchFilter from '@/components/SearchFilter'
 import type { BookStatus } from '@/generated/prisma/client'
 
@@ -27,7 +27,7 @@ export default async function HomePage({ searchParams }: Props) {
         <h1 className="text-2xl font-bold tracking-tight">Biblio</h1>
         <Link
           href="/books/new"
-          className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+          className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition active:scale-95"
         >
           + Ekle
         </Link>
@@ -35,7 +35,7 @@ export default async function HomePage({ searchParams }: Props) {
       <Suspense>
         <SearchFilter q={params.q} status={params.status} />
       </Suspense>
-      <BookList books={books} />
+      <AnimatedBookList books={books} />
     </div>
   )
 }

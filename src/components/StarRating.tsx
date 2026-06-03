@@ -1,6 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import gsap from 'gsap'
+import { useGSAP } from '@gsap/react'
+import { prefersReducedMotion } from '@/lib/animations'
 
 interface Props {
   name: string
@@ -10,13 +13,24 @@ interface Props {
 export default function StarRating({ name, defaultValue = 0 }: Props) {
   const [value, setValue] = useState(defaultValue)
   const [hover, setHover] = useState(0)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const { contextSafe } = useGSAP({ scope: containerRef })
 
-  function handleClick(star: number) {
+  const handleClick = contextSafe((star: number) => {
     setValue((prev) => (prev === star ? 0 : star))
-  }
+    if (prefersReducedMotion()) return
+    const el = containerRef.current?.querySelectorAll('button')[star - 1]
+    if (el) {
+      gsap.fromTo(
+        el,
+        { scale: 0.8 },
+        { scale: 1, duration: 0.25, ease: 'power2.out' },
+      )
+    }
+  })
 
   return (
-    <div className="flex items-center gap-0.5">
+    <div ref={containerRef} className="flex items-center gap-0.5">
       <input type="hidden" name={name} value={value || ''} />
       {[1, 2, 3, 4, 5].map((star) => (
         <button

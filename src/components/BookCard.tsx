@@ -16,9 +16,9 @@ export default function BookCard({ book }: { book: Book }) {
   return (
     <Link
       href={`/books/${book.id}`}
-      className="flex items-center gap-4 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+      className="group flex items-center gap-4 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition active:scale-[0.99]"
     >
-      <div className="w-12 h-16 flex-shrink-0 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden">
+      <div className="w-12 h-16 flex-shrink-0 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden transition-shadow group-hover:shadow-md">
         {book.coverPath ? (
           <Image
             src={book.coverPath}
