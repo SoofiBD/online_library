@@ -45,3 +45,7 @@ public/uploads/
 next-env.d.ts
 
 /src/generated/prisma
+
+# standalone barcode scanner app (local only, not part of Biblio)
+/index.html
+/SCANNER_APP.md
