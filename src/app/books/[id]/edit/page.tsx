@@ -24,9 +24,9 @@ export default async function EditBookPage({ params }: Props) {
           href={`/books/${id}`}
           className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
         >
-          ← Geri
+          ← Back
         </Link>
-        <h1 className="text-xl font-bold">Düzenle</h1>
+        <h1 className="text-xl font-bold">Edit</h1>
       </header>
       <BookForm action={boundAction} book={book} />
     </div>

@@ -10,9 +10,9 @@ export default function NewBookPage() {
           href="/"
           className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
         >
-          ← Geri
+          ← Back
         </Link>
-        <h1 className="text-xl font-bold">Yeni Kitap</h1>
+        <h1 className="text-xl font-bold">New Book</h1>
       </header>
       <BookForm action={createBook} />
     </div>

@@ -10,9 +10,9 @@ import type { Book } from '@/generated/prisma/client'
 import type { FormState } from '@/actions/books'
 
 const STATUS_OPTIONS = [
-  { value: 'WANT_TO_READ', label: 'Okumak İstiyorum' },
-  { value: 'READING', label: 'Okuyorum' },
-  { value: 'READ', label: 'Okudum' },
+  { value: 'WANT_TO_READ', label: 'Want to Read' },
+  { value: 'READING', label: 'Reading' },
+  { value: 'READ', label: 'Read' },
 ]
 
 interface Props {
@@ -62,7 +62,7 @@ export default function BookForm({ action, book }: Props) {
       const { url } = await res.json()
       setCoverPath(url)
     } else {
-      const { error } = await res.json().catch(() => ({ error: 'Yükleme başarısız' }))
+      const { error } = await res.json().catch(() => ({ error: 'Upload failed' }))
       setUploadError(error)
       setCoverPreview(book?.coverPath ?? null)
       setCoverPath(book?.coverPath ?? '')
@@ -71,9 +71,9 @@ export default function BookForm({ action, book }: Props) {
 
   return (
     <form action={formAction} className="space-y-6">
-      {/* Kapak */}
+      {/* Cover */}
       <div>
-        <p className="text-sm font-medium mb-2">Kapak Fotoğrafı</p>
+        <p className="text-sm font-medium mb-2">Cover Photo</p>
         <div
           role="button"
           tabIndex={0}
@@ -82,13 +82,13 @@ export default function BookForm({ action, book }: Props) {
           className="w-32 h-44 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden cursor-pointer flex items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-amber-400 transition-colors"
         >
           {uploading ? (
-            <span className="text-xs text-gray-400">Yükleniyor...</span>
+            <span className="text-xs text-gray-400">Uploading...</span>
           ) : coverPreview ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               ref={previewRef}
               src={coverPreview}
-              alt="Kapak önizleme"
+              alt="Cover preview"
               className="object-cover w-full h-full"
             />
           ) : (
@@ -106,10 +106,10 @@ export default function BookForm({ action, book }: Props) {
         <input type="hidden" name="coverPath" value={coverPath} />
       </div>
 
-      {/* Ad */}
+      {/* Title */}
       <div>
         <label htmlFor="title" className="block text-sm font-medium mb-1">
-          Kitap Adı <span className="text-red-500">*</span>
+          Title <span className="text-red-500">*</span>
         </label>
         <input
           id="title"
@@ -122,10 +122,10 @@ export default function BookForm({ action, book }: Props) {
         )}
       </div>
 
-      {/* Yazar */}
+      {/* Author */}
       <div>
         <label htmlFor="author" className="block text-sm font-medium mb-1">
-          Yazar
+          Author
         </label>
         <input
           id="author"
@@ -135,9 +135,9 @@ export default function BookForm({ action, book }: Props) {
         />
       </div>
 
-      {/* Durum */}
+      {/* Status */}
       <div>
-        <p className="text-sm font-medium mb-2">Durum</p>
+        <p className="text-sm font-medium mb-2">Status</p>
         <div className="flex flex-wrap gap-3">
           {STATUS_OPTIONS.map((opt) => {
             const defaultStatus = book?.status ?? 'WANT_TO_READ'
@@ -160,16 +160,16 @@ export default function BookForm({ action, book }: Props) {
         </div>
       </div>
 
-      {/* Puan */}
+      {/* Rating */}
       <div>
-        <p className="text-sm font-medium mb-2">Puan</p>
+        <p className="text-sm font-medium mb-2">Rating</p>
         <StarRating name="rating" defaultValue={book?.rating ?? 0} />
       </div>
 
-      {/* Notlar */}
+      {/* Notes */}
       <div>
         <label htmlFor="notes" className="block text-sm font-medium mb-1">
-          Notlar
+          Notes
         </label>
         <textarea
           id="notes"
@@ -185,7 +185,7 @@ export default function BookForm({ action, book }: Props) {
         disabled={isPending || uploading}
         className="w-full bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-medium py-3 rounded-lg transition active:scale-[0.98]"
       >
-        {isPending ? 'Kaydediliyor...' : 'Kaydet'}
+        {isPending ? 'Saving...' : 'Save'}
       </button>
     </form>
   )

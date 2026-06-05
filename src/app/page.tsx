@@ -29,7 +29,7 @@ export default async function HomePage({ searchParams }: Props) {
           href="/books/new"
           className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition active:scale-95"
         >
-          + Ekle
+          + Add
         </Link>
       </header>
       <Suspense>

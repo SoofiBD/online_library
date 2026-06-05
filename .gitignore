@@ -49,3 +49,8 @@ next-env.d.ts
 # standalone barcode scanner app (local only, not part of Biblio)
 /index.html
 /SCANNER_APP.md
+
+# local tooling / agent workflow files (not for GitHub)
+/CLAUDE.md
+/AGENTS.md
+/docs/superpowers/

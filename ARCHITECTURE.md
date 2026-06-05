@@ -1,12 +1,12 @@
-# Mimari
+# Architecture
 
-## Tasarım İlkesi
+## Design Principle
 
-> Bugünün basit halini (tek kullanıcı, local) **yarının karmaşık haline** (multi-user, cloud, AI) yeniden yazmadan büyütebilmek.
+> Grow from today's simple form (single user, local) to **tomorrow's complex form** (multi-user, cloud, AI) without a rewrite.
 
-Bunu üç adapter katmanıyla sağlıyoruz. Business logic (kitap ekle, listele, not güncelle) hiçbir zaman somut bir DB/storage/auth'a doğrudan bağlanmaz; hep bir interface'e bağlanır. Faz geçişlerinde sadece interface'in implementasyonu değişir.
+We achieve this with three adapter layers. Business logic (add a book, list books, update notes) never binds directly to a concrete DB/storage/auth; it always binds to an interface. Across phase transitions, only the interface's implementation changes.
 
-## Katmanlar
+## Layers
 
 ```
 ┌─────────────────────────────────────────────┐
@@ -14,22 +14,22 @@ Bunu üç adapter katmanıyla sağlıyoruz. Business logic (kitap ekle, listele,
 ├─────────────────────────────────────────────┤
 │  API Layer (route handlers / server actions)  │  request → response, validation (zod)
 ├─────────────────────────────────────────────┤
-│  Service Layer (business logic)                │  "kitap ekle", "öneri üret"
-│   - BookService                                │  adapter'ları kullanır, somut DB bilmez
-│   - RecommendationService (faz 3)              │
+│  Service Layer (business logic)                │  "add book", "generate recommendation"
+│   - BookService                                │  uses adapters, knows no concrete DB
+│   - RecommendationService (phase 3)            │
 ├─────────────────────────────────────────────┤
-│  Adapter Layer (interface'ler + impl)          │  ← genişleme buradan olur
-│   - Repository    (data erişimi)              │
-│   - StorageAdapter (dosya/fotoğraf)           │
-│   - AuthProvider   (kimlik, opsiyonel)        │
+│  Adapter Layer (interfaces + impl)             │  ← extension happens here
+│   - Repository    (data access)               │
+│   - StorageAdapter (file/photo)               │
+│   - AuthProvider   (identity, optional)       │
 ├─────────────────────────────────────────────┤
-│  Infra (Prisma + SQLite, local FS)             │  somut teknoloji
+│  Infra (Prisma + SQLite, local FS)             │  concrete technology
 └─────────────────────────────────────────────┘
 ```
 
-## Üç Genişleme Noktası
+## Three Extension Points
 
-### 1. Repository — DB bağımsızlığı
+### 1. Repository — DB independence
 ```
 interface BookRepository {
   list(ownerId, filter): Promise<Book[]>
@@ -39,54 +39,54 @@ interface BookRepository {
   delete(ownerId, id): Promise<void>
 }
 ```
-- **Şimdi**: `PrismaBookRepository` (SQLite arkada)
-- **Sonra**: aynı interface, Postgres provider — kod değişmez, sadece `DATABASE_URL` ve Prisma provider
-- Tüm metotlar `ownerId` alır → tenancy day-1 hazır (aşağıda)
+- **Now**: `PrismaBookRepository` (SQLite behind it)
+- **Later**: same interface, Postgres provider — code doesn't change, only `DATABASE_URL` and the Prisma provider
+- All methods take `ownerId` → tenancy ready day-1 (see below)
 
-### 2. StorageAdapter — fotoğraf depolama
+### 2. StorageAdapter — photo storage
 ```
 interface StorageAdapter {
-  save(file, key): Promise<string>   // path/URL döner
+  save(file, key): Promise<string>   // returns path/URL
   getUrl(key): string
   delete(key): Promise<void>
 }
 ```
-- **Şimdi**: `LocalStorageAdapter` → `./data/uploads/`, DB'de path tutulur (BLOB değil)
-- **Sonra**: `S3StorageAdapter` / `R2StorageAdapter` — Service katmanı farkı görmez
+- **Now**: `LocalStorageAdapter` → `./data/uploads/`, the path is kept in the DB (not a BLOB)
+- **Later**: `S3StorageAdapter` / `R2StorageAdapter` — the Service layer sees no difference
 
-### 3. AuthProvider — kimlik (opsiyonel)
+### 3. AuthProvider — identity (optional)
 ```
 interface AuthProvider {
-  getCurrentUser(req): Promise<User>   // owner kim?
+  getCurrentUser(req): Promise<User>   // who is the owner?
 }
 ```
-- **Şimdi**: `LocalOwnerProvider` → her zaman tek sabit `local-owner` user döner (login yok)
-- **Sonra**: `SessionAuthProvider` (Auth.js/Lucia) → gerçek kullanıcı + sharing
+- **Now**: `LocalOwnerProvider` → always returns a single fixed `local-owner` user (no login)
+- **Later**: `SessionAuthProvider` (Auth.js/Lucia) → real users + sharing
 
-## Tenancy Modeli (kritik karar)
+## Tenancy Model (critical decision)
 
-Her tablo `ownerId` taşır. Single-user modda bu sabit `"local-owner"`. Bu sayede:
+Every table carries an `ownerId`. In single-user mode this is the fixed value `"local-owner"`. As a result:
 
-- Bugün: query `WHERE ownerId = 'local-owner'` (pratikte hep aynı)
-- Yarın multi-user: `WHERE ownerId = session.userId` — **schema migration gerekmez**, sadece `AuthProvider` swap edilir
-- Paylaşım: ayrı bir `Share(bookId, sharedWithUserId, permission)` tablosu eklenir; mevcut sorgular bozulmaz
+- Today: query `WHERE ownerId = 'local-owner'` (in practice always the same)
+- Tomorrow, multi-user: `WHERE ownerId = session.userId` — **no schema migration needed**, only the `AuthProvider` is swapped
+- Sharing: add a separate `Share(bookId, sharedWithUserId, permission)` table; existing queries are not broken
 
-Bu, "şimdi basit / sonra zahmetsiz büyüme" dengesinin kalbidir.
+This is the heart of the "simple now / effortless growth later" balance.
 
-## Veri Akışı (kitap ekleme örneği)
+## Data Flow (add-a-book example)
 
 ```
-Telefon/Browser
-  → POST /api/books  (multipart: foto + metadata)
+Phone/Browser
+  → POST /api/books  (multipart: photo + metadata)
   → API: zod validate
   → AuthProvider.getCurrentUser() → ownerId
-  → StorageAdapter.save(foto) → coverPath
+  → StorageAdapter.save(photo) → coverPath
   → BookService.create(ownerId, {..., coverPath})
   → BookRepository.create()  → Prisma → SQLite
   → 201 + book JSON
 ```
 
-## Klasör Yapısı (öneri)
+## Folder Structure (suggested)
 
 ```
 biblio/
@@ -102,16 +102,16 @@ biblio/
 ├── prisma/
 │   ├── schema.prisma
 │   └── migrations/
-├── data/                    # SQLite dosyası + uploads (gitignore)
+├── data/                    # SQLite file + uploads (gitignored)
 └── docs/
 ```
 
-## Neden Bu Stack
+## Why This Stack
 
-| Karar | Neden |
-|-------|-------|
-| Next.js full-stack | Tek repo, tek komut çalışır; frontend+backend tek deploy — "indir-kur-çalıştır" hedefi |
-| Prisma | DB provider swap'ı bir satır; type-safe; migration built-in |
-| SQLite | Sıfır kurulum, tek dosya, backup = dosya kopyala; kişisel ölçekte ideal |
-| Adapter pattern | Multi-user/cloud/AI fazları için yeniden yazım gerektirmez |
-| TypeScript + zod | Sınır validation + tip güvenliği, AI üreteceği veriyi de doğrulamak için |
+| Decision | Why |
+|----------|-----|
+| Next.js full-stack | One repo, one command to run; frontend+backend deploy together — the "download-install-run" goal |
+| Prisma | DB provider swap is one line; type-safe; migrations built-in |
+| SQLite | Zero setup, single file, backup = copy the file; ideal at personal scale |
+| Adapter pattern | No rewrite needed for the multi-user/cloud/AI phases |
+| TypeScript + zod | Boundary validation + type safety, also to validate AI-generated data |

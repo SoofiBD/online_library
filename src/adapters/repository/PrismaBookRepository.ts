@@ -31,13 +31,13 @@ export class PrismaBookRepository implements BookRepository {
 
   async update(ownerId: string, id: string, data: BookUpdateData): Promise<Book> {
     const exists = await this.getById(ownerId, id)
-    if (!exists) throw new Error('Kitap bulunamadı')
+    if (!exists) throw new Error('Book not found')
     return prisma.book.update({ where: { id }, data })
   }
 
   async delete(ownerId: string, id: string): Promise<void> {
     const exists = await this.getById(ownerId, id)
-    if (!exists) throw new Error('Kitap bulunamadı')
+    if (!exists) throw new Error('Book not found')
     await prisma.book.delete({ where: { id } })
   }
 }

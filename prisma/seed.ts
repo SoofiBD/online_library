@@ -12,9 +12,9 @@ async function main() {
   await prisma.user.upsert({
     where: { id: 'local-owner' },
     update: {},
-    create: { id: 'local-owner', name: 'Yerel Kullanıcı' },
+    create: { id: 'local-owner', name: 'Local User' },
   })
-  console.log('Seed tamamlandı: local-owner oluşturuldu.')
+  console.log('Seed complete: local-owner created.')
 }
 
 main()

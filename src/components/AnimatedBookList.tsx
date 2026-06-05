@@ -28,7 +28,7 @@ export default function AnimatedBookList({ books }: { books: Book[] }) {
     return (
       <div className="text-center py-16 text-gray-400">
         <p className="text-5xl mb-4">📚</p>
-        <p className="text-sm">Henüz kitap yok. İlk kitabını ekle!</p>
+        <p className="text-sm">No books yet. Add your first book!</p>
       </div>
     )
   }

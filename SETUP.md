@@ -1,11 +1,11 @@
-# Kurulum & Erişim
+# Setup & Access
 
-## Gereksinimler
+## Requirements
 
-- Node.js 20+ ve npm
+- Node.js 20+ and npm
 - Git
 
-## Kurulum
+## Installation
 
 ```bash
 git clone <repo-url> biblio
@@ -16,63 +16,63 @@ npm run db:setup     # prisma migrate deploy + seed (local-owner user)
 npm run dev
 ```
 
-`.env` (örnek):
+`.env` (example):
 ```
 DATABASE_URL="file:./data/biblio.db"
 STORAGE_DRIVER="local"          # local | s3
 UPLOAD_DIR="./data/uploads"
-AUTH_MODE="local"               # local | session  (faz 2'de session)
+AUTH_MODE="local"               # local | session  (session in phase 2)
 ```
 
-## Telefondan Erişim
+## Phone Access
 
-### Seçenek A — Aynı Wi-Fi (en kolay)
+### Option A — Same Wi-Fi (easiest)
 
 ```bash
-npm run dev -- -H 0.0.0.0       # tüm ağ arayüzlerini dinle
+npm run dev -- -H 0.0.0.0       # listen on all network interfaces
 ```
 
-Makinenin local IP'sini bul:
-- macOS/Linux: `ipconfig getifaddr en0` veya `ip addr`
+Find the machine's local IP:
+- macOS/Linux: `ipconfig getifaddr en0` or `ip addr`
 - Windows: `ipconfig` → IPv4 Address
 
-Telefonda: `http://<local-ip>:3000` (örn. `http://192.168.1.42:3000`)
+On the phone: `http://<local-ip>:3000` (e.g. `http://192.168.1.42:3000`)
 
-**Sorun çıkarsa**: bilgisayarın firewall'u 3000 portuna izin vermeli; telefon ve bilgisayar aynı ağda olmalı (misafir Wi-Fi'ı cihazları izole edebilir).
+**If it doesn't work**: the computer's firewall must allow port 3000; the phone and computer must be on the same network (guest Wi-Fi can isolate devices).
 
-### Seçenek B — Her yerden (farklı ağ)
+### Option B — From anywhere (different network)
 
-| Yöntem | Artı | Eksi |
+| Method | Pros | Cons |
 |--------|------|------|
-| **Tailscale** | Port forwarding yok, şifreli VPN, kurulum 5 dk | Her cihaza Tailscale kurulur |
-| **Cloudflare Tunnel** | Public HTTPS URL, cihaza kurulum yok | Cloudflare hesabı + biraz config |
-| Port forwarding | Bağımsız | Güvenlik riski, ISP'ye bağlı — önerilmez |
+| **Tailscale** | No port forwarding, encrypted VPN, 5-min setup | Tailscale installed on each device |
+| **Cloudflare Tunnel** | Public HTTPS URL, no install on device | Cloudflare account + some config |
+| Port forwarding | Independent | Security risk, depends on ISP — not recommended |
 
-**Önerilen: Tailscale.** Kur, makineyi ve telefonu aynı tailnet'e al, `http://<makine-tailscale-ip>:3000` ile eriş. Trafik şifreli, internete açık port yok.
+**Recommended: Tailscale.** Install it, put the machine and phone on the same tailnet, and access via `http://<machine-tailscale-ip>:3000`. Traffic is encrypted, no port is exposed to the internet.
 
-## Production / Kalıcı Çalıştırma
+## Production / Persistent Run
 
 ```bash
 npm run build
-npm run start                   # veya pm2 / systemd ile servis olarak
+npm run start                   # or run as a service via pm2 / systemd
 ```
 
-Faz 2 sonrası Docker:
+After phase 2, Docker:
 ```bash
 docker compose up -d            # app + (postgres)
 ```
 
-## Veri & Backup
+## Data & Backup
 
-Her şey `./data/` altında:
+Everything lives under `./data/`:
 ```
-data/biblio.db        # veritabanı
-data/uploads/         # fotoğraflar
+data/biblio.db        # the database
+data/uploads/         # the photos
 ```
-Backup = bu klasörü kopyala. Bu klasör `.gitignore`'dadır — kişisel veri repo'ya gitmez.
+Backup = copy this folder. This folder is in `.gitignore` — personal data does not go to the repo.
 
-## Sık Sorunlar
+## Common Issues
 
-- **Telefonda foto yüklenmiyor / dönük geliyor**: EXIF rotation server'da düzeltilir; büyük dosyalar resize edilir. Yine sorun varsa upload limitini (`next.config`) kontrol et.
-- **`db:setup` hata veriyor**: `data/` klasörü yazılabilir mi? `DATABASE_URL` path'i doğru mu?
-- **Telefon bağlanamıyor**: firewall + aynı ağ kontrolü (yukarı bak).
+- **Photo won't upload / comes in rotated on phone**: EXIF rotation is fixed server-side; large files are resized. If problems persist, check the upload limit (`next.config`).
+- **`db:setup` throws an error**: Is the `data/` folder writable? Is the `DATABASE_URL` path correct?
+- **Phone can't connect**: check firewall + same network (see above).

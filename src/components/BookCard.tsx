@@ -3,9 +3,9 @@ import Link from 'next/link'
 import type { Book } from '@/generated/prisma/client'
 
 const STATUS_LABELS: Record<string, string> = {
-  WANT_TO_READ: 'Okumak İst.',
-  READING: 'Okuyor',
-  READ: 'Okudu',
+  WANT_TO_READ: 'Want to Read',
+  READING: 'Reading',
+  READ: 'Read',
 }
 
 export default function BookCard({ book }: { book: Book }) {

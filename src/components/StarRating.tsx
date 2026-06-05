@@ -40,7 +40,7 @@ export default function StarRating({ name, defaultValue = 0 }: Props) {
           onMouseEnter={() => setHover(star)}
           onMouseLeave={() => setHover(0)}
           className="text-2xl text-amber-400 hover:scale-110 transition-transform leading-none"
-          aria-label={`${star} yıldız`}
+          aria-label={`${star} stars`}
         >
           {star <= (hover || value) ? '★' : '☆'}
         </button>

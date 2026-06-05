@@ -3,7 +3,7 @@ import { z } from 'zod'
 export const bookStatusSchema = z.enum(['WANT_TO_READ', 'READING', 'READ'])
 
 export const createBookSchema = z.object({
-  title: z.string().min(1, 'Kitap adı zorunludur'),
+  title: z.string().min(1, 'Title is required'),
   author: z.string().optional().nullable(),
   coverPath: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
@@ -12,7 +12,7 @@ export const createBookSchema = z.object({
 })
 
 export const updateBookSchema = z.object({
-  title: z.string().min(1, 'Kitap adı zorunludur').optional(),
+  title: z.string().min(1, 'Title is required').optional(),
   author: z.string().optional().nullable(),
   coverPath: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),

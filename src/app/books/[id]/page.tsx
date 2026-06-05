@@ -7,9 +7,9 @@ import DeleteBookButton from '@/components/DeleteBookButton'
 import FadeIn from '@/components/FadeIn'
 
 const STATUS_LABELS: Record<string, string> = {
-  WANT_TO_READ: 'Okumak İstiyorum',
-  READING: 'Okuyorum',
-  READ: 'Okudum',
+  WANT_TO_READ: 'Want to Read',
+  READING: 'Reading',
+  READ: 'Read',
 }
 
 interface Props {
@@ -36,7 +36,7 @@ export default async function BookDetailPage({ params }: Props) {
           href="/"
           className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 mb-6 inline-block"
         >
-          ← Kütüphane
+          ← Library
         </Link>
 
         <div className="flex gap-5 mb-6">
@@ -68,7 +68,7 @@ export default async function BookDetailPage({ params }: Props) {
       {book.notes && (
         <div className="mb-8">
           <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
-            Notlar
+            Notes
           </h2>
           <p className="text-gray-700 dark:text-gray-200 whitespace-pre-wrap text-sm leading-relaxed">
             {book.notes}
@@ -81,7 +81,7 @@ export default async function BookDetailPage({ params }: Props) {
           href={`/books/${id}/edit`}
           className="flex-1 text-center bg-amber-500 hover:bg-amber-600 text-white py-2.5 rounded-lg font-medium text-sm transition active:scale-95"
         >
-          Düzenle
+          Edit
         </Link>
         <DeleteBookButton action={boundDelete} />
         </div>

@@ -1,43 +1,43 @@
-# Biblio — Kişisel Kütüphane
+# Biblio — Personal Library
 
-Kendi kitap koleksiyonunu yöneten, self-hosted bir web app. Kitabın fotoğrafını, adını, yazarını ve senin notlarını/puanını saklar. GitHub'dan indir, kur, çalıştır — kendi veritabanın senin makinende kalır. Aynı ağdaki telefonundan da erişip ekleme/düzenleme yapabilirsin.
+A self-hosted web app for managing your own book collection. It stores each book's photo, title, author, and your notes/rating. Clone it from GitHub, install, and run — your database stays on your own machine. You can also reach it from your phone on the same network to add or edit books.
 
-## Temel Fikir
+## Core Idea
 
-Her install **tek kullanıcılıdır**: projeyi çalıştıran kişi yalnızca kendi veritabanını görür. Mimari, ileride **multi-user ve paylaşım** eklenebilecek şekilde tasarlandı; bunun için yeniden yazım gerekmez (bkz. [ROADMAP](docs/ROADMAP.md)).
+Every install is **single-user**: whoever runs the project sees only their own database. The architecture is designed so that **multi-user and sharing** can be added later without a rewrite (see [ROADMAP](ROADMAP.md)).
 
-## Hızlı Başlangıç
+## Quick Start
 
 ```bash
 git clone <repo-url> biblio
 cd biblio
-cp .env.example .env        # ayarları düzenle
+cp .env.example .env        # edit settings
 npm install
 npm run db:setup            # schema + migration + seed
 npm run dev                 # http://localhost:3000
 ```
 
-## Telefondan Erişim (aynı Wi-Fi)
+## Phone Access (same Wi-Fi)
 
 ```bash
-npm run dev -- -H 0.0.0.0   # tüm ağ arayüzlerini dinle
+npm run dev -- -H 0.0.0.0   # listen on all network interfaces
 ```
 
-Telefonun tarayıcısında `http://<makine-local-ip>:3000` adresine git. Dışarıdan (farklı ağ) erişim için [SETUP.md](docs/SETUP.md) → Tailscale / Cloudflare Tunnel bölümü.
+In your phone's browser, go to `http://<machine-local-ip>:3000`. For access from outside your network, see [SETUP.md](SETUP.md) → Tailscale / Cloudflare Tunnel section.
 
-## Dökümanlar
+## Documentation
 
-| Dosya | İçerik |
-|-------|--------|
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Katmanlar, adapter pattern, genişletme noktaları |
-| [docs/DATABASE.md](docs/DATABASE.md) | Schema, tenancy modeli, migration stratejisi |
-| [docs/ROADMAP.md](docs/ROADMAP.md) | Fazlar: CRUD → paylaşım → AI öneri |
-| [docs/SETUP.md](docs/SETUP.md) | Kurulum, telefon/uzak erişim, deployment |
+| File | Contents |
+|------|----------|
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Layers, adapter pattern, extension points |
+| [DATABASE.md](DATABASE.md) | Schema, tenancy model, migration strategy |
+| [ROADMAP.md](ROADMAP.md) | Phases: CRUD → sharing → AI recommendations |
+| [SETUP.md](SETUP.md) | Installation, phone/remote access, deployment |
 
 ## Stack
 
 Next.js (full-stack) · Prisma · SQLite (→ Postgres) · TypeScript · Tailwind CSS
 
-## Lisans
+## License
 
-MIT (öneri — kendine göre değiştir).
+MIT (suggested — change to suit your needs).

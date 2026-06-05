@@ -1,16 +1,16 @@
-# Veritabanı
+# Database
 
-## Tasarım Hedefi
+## Design Goal
 
-Schema, **bugün tek kullanıcı** için çalışır ama **multi-user + paylaşım** için gereken kolonlar/ilişkiler day-1'den mevcuttur. Böylece ileride ağır migration veya veri taşıma derdi olmaz.
+The schema **works for a single user today** but the columns/relations needed for **multi-user + sharing** are present from day-1. This avoids heavy migrations or data moves later.
 
-## Schema (Prisma — kavramsal)
+## Schema (Prisma — conceptual)
 
 ```prisma
 model User {
   id        String   @id @default(cuid())
-  // single-user modda tek kayıt: id = "local-owner"
-  email     String?  @unique        // multi-user'da dolar
+  // single record in single-user mode: id = "local-owner"
+  email     String?  @unique        // populated in multi-user
   name      String?
   books     Book[]
   createdAt DateTime @default(now())
@@ -18,13 +18,13 @@ model User {
 
 model Book {
   id        String   @id @default(cuid())
-  ownerId   String                   // ← tenancy anahtarı, HER sorguda filtre
+  ownerId   String                   // ← tenancy key, filtered on EVERY query
   owner     User     @relation(fields: [ownerId], references: [id])
 
   title     String
   author    String?
-  coverPath String?                  // dosya path/URL — BLOB değil
-  notes     String?                  // kullanıcının düşünceleri
+  coverPath String?                  // file path/URL — not a BLOB
+  notes     String?                  // the user's thoughts
   rating    Int?                     // 1-5
   status    BookStatus @default(WANT_TO_READ)
 
@@ -33,7 +33,7 @@ model Book {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([ownerId])                 // tüm sorgular ownerId ile başlar
+  @@index([ownerId])                 // all queries start with ownerId
   @@index([ownerId, status])
 }
 
@@ -45,14 +45,14 @@ enum BookStatus {
 
 model Tag {
   id      String @id @default(cuid())
-  ownerId String                     // tag'ler de owner'a ait
+  ownerId String                     // tags belong to an owner too
   name    String
   books   Book[] @relation("BookTags")
 
   @@unique([ownerId, name])
 }
 
-// FAZ 2'de eklenecek (şimdi yazma, sadece planda dursun):
+// To be added in PHASE 2 (don't write it now, just keep it in the plan):
 // model Share {
 //   id               String @id @default(cuid())
 //   bookId           String
@@ -61,43 +61,43 @@ model Tag {
 // }
 ```
 
-## Tenancy Kuralı (tek altın kural)
+## Tenancy Rule (the one golden rule)
 
-**Her data sorgusu `ownerId` ile filtrelenir. İstisna yok.**
+**Every data query is filtered by `ownerId`. No exceptions.**
 
 ```
 list:   WHERE ownerId = current.ownerId
-get:    WHERE id = ? AND ownerId = current.ownerId   // başkasının kaydını okuyamaz
+get:    WHERE id = ? AND ownerId = current.ownerId   // can't read someone else's record
 update: WHERE id = ? AND ownerId = current.ownerId
 ```
 
-Bu kural Repository katmanında zorunlu kılınır (her metot ilk parametre olarak `ownerId` alır). Service/UI bunu unutamaz çünkü interface dayatır.
+This rule is enforced at the Repository layer (every method takes `ownerId` as its first parameter). The Service/UI cannot forget it because the interface mandates it.
 
-- **Single-user mod**: `current.ownerId = "local-owner"` (AuthProvider sabit döner)
-- **Multi-user mod**: `current.ownerId = session.userId` (AuthProvider swap edilir)
+- **Single-user mode**: `current.ownerId = "local-owner"` (AuthProvider returns a constant)
+- **Multi-user mode**: `current.ownerId = session.userId` (AuthProvider is swapped)
 
-Schema ikisinde de aynı → **geçişte migration yok**.
+The schema is identical in both → **no migration on transition**.
 
-## Fotoğraf Depolama
+## Photo Storage
 
-DB'de **path/URL** tutulur, dosyanın kendisi değil:
-- BLOB → DB şişer, backup ağırlaşır, performans düşer
-- Local modda: `./data/uploads/<ownerId>/<bookId>.<ext>`
-- Upload'ta resize + compress (örn. max 1200px, webp) — telefon fotoğrafları büyük gelir
-- Cloud'a geçişte sadece `coverPath` bir URL'e döner, schema değişmez
+The DB keeps a **path/URL**, not the file itself:
+- BLOB → DB bloats, backups get heavy, performance drops
+- Local mode: `./data/uploads/<ownerId>/<bookId>.<ext>`
+- On upload, resize + compress (e.g. max 1200px, webp) — phone photos come in large
+- Moving to cloud only turns `coverPath` into a URL; the schema doesn't change
 
-## Migration Stratejisi
+## Migration Strategy
 
-- **Dev**: `prisma migrate dev` — her schema değişikliğinde versiyonlu migration
-- **Kullanıcı kurulumu**: `prisma migrate deploy` — `npm run db:setup` içinde otomatik
-- SQLite → Postgres geçişi: provider değiştir + `migrate dev` ile yeniden generate; veri taşıma scripti faz 2'de
-- Migration dosyaları repo'ya commit edilir → herkes aynı schema'yı alır
+- **Dev**: `prisma migrate dev` — a versioned migration on every schema change
+- **User install**: `prisma migrate deploy` — runs automatically inside `npm run db:setup`
+- SQLite → Postgres switch: change the provider + regenerate with `migrate dev`; data-move script in phase 2
+- Migration files are committed to the repo → everyone gets the same schema
 
 ## Backup
 
-Single-user/SQLite'ta backup = iki dosyayı kopyala:
+In single-user/SQLite, backup = copy two things:
 ```
-data/biblio.db          # veritabanı
-data/uploads/           # fotoğraflar
+data/biblio.db          # the database
+data/uploads/           # the photos
 ```
-İleride: scheduled dump + cloud storage (faz 2/3).
+Later: scheduled dump + cloud storage (phase 2/3).

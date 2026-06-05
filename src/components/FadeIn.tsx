@@ -7,7 +7,7 @@ import { DURATION, EASE, STAGGER, prefersReducedMotion } from '@/lib/animations'
 
 interface Props {
   children: React.ReactNode
-  /** true ise doğrudan alt öğeler sırayla (stagger) belirir. */
+  /** If true, direct child elements appear in sequence (staggered). */
   stagger?: boolean
   className?: string
 }

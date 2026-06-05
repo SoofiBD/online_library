@@ -4,10 +4,10 @@ import { useRouter, usePathname } from 'next/navigation'
 import { useRef } from 'react'
 
 const STATUSES = [
-  { value: '', label: 'Tümü' },
-  { value: 'WANT_TO_READ', label: 'Okumak İst.' },
-  { value: 'READING', label: 'Okuyor' },
-  { value: 'READ', label: 'Okudu' },
+  { value: '', label: 'All' },
+  { value: 'WANT_TO_READ', label: 'Want to Read' },
+  { value: 'READING', label: 'Reading' },
+  { value: 'READ', label: 'Read' },
 ]
 
 interface Props {
@@ -48,7 +48,7 @@ export default function SearchFilter({ q, status }: Props) {
         type="search"
         defaultValue={q}
         onChange={handleSearch}
-        placeholder="Kitap veya yazar ara..."
+        placeholder="Search by book or author..."
         className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm"
       />
       <div className="flex gap-2 flex-wrap">
