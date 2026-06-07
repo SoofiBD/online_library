@@ -5,28 +5,40 @@ export interface BookFilter {
   status?: BookStatus
 }
 
+// A Book joined with the current user's Review, flattened so existing consumers
+// can keep reading `book.rating` / `book.notes` even though those fields now
+// live on the Review model.
+export type BookWithReview = Book & {
+  rating: number | null
+  notes: string | null
+}
+
 export interface BookCreateData {
+  isbn?: string | null
   title: string
   author?: string | null
   coverPath?: string | null
-  notes?: string | null
-  rating?: number | null
   status?: BookStatus
+  // Routed into the user's Review inside the repository transaction:
+  rating?: number | null
+  notes?: string | null
 }
 
 export interface BookUpdateData {
+  isbn?: string | null
   title?: string
   author?: string | null
   coverPath?: string | null
-  notes?: string | null
-  rating?: number | null
   status?: BookStatus
+  rating?: number | null
+  notes?: string | null
 }
 
 export interface BookRepository {
-  list(ownerId: string, filter?: BookFilter): Promise<Book[]>
-  getById(ownerId: string, id: string): Promise<Book | null>
-  create(ownerId: string, data: BookCreateData): Promise<Book>
-  update(ownerId: string, id: string, data: BookUpdateData): Promise<Book>
+  list(ownerId: string, filter?: BookFilter): Promise<BookWithReview[]>
+  getById(ownerId: string, id: string): Promise<BookWithReview | null>
+  findByIsbn(ownerId: string, isbn: string): Promise<BookWithReview | null>
+  create(ownerId: string, data: BookCreateData): Promise<BookWithReview>
+  update(ownerId: string, id: string, data: BookUpdateData): Promise<BookWithReview>
   delete(ownerId: string, id: string): Promise<void>
 }

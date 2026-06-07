@@ -3,11 +3,11 @@
 import { useRef } from 'react'
 import gsap from 'gsap'
 import { useGSAP } from '@gsap/react'
-import type { Book } from '@/generated/prisma/client'
+import type { BookWithReview } from '@/adapters/repository/BookRepository'
 import BookCard from './BookCard'
 import { DURATION, EASE, STAGGER, prefersReducedMotion } from '@/lib/animations'
 
-export default function AnimatedBookList({ books }: { books: Book[] }) {
+export default function AnimatedBookList({ books }: { books: BookWithReview[] }) {
   const container = useRef<HTMLDivElement>(null)
 
   useGSAP(

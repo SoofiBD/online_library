@@ -12,23 +12,31 @@ model User {
   email     String?  @unique
   name      String?
   books     Book[]
+  reviews   Review[]
   createdAt DateTime @default(now())
 }
 
+// A Book is the *generic* catalogue entry: the immutable facts about a title
+// (what it is, who wrote it, its ISBN). Anything that reflects how a *user*
+// feels about the book — the rating and personal notes — lives in `Review`,
+// so the same Book can later be shared across users without duplicating state.
 model Book {
   id        String     @id @default(cuid())
   ownerId   String
   owner     User       @relation(fields: [ownerId], references: [id])
+  isbn      String?
   title     String
   author    String?
   coverPath String?
-  notes     String?
-  rating    Int?
   status    BookStatus @default(WANT_TO_READ)
   tags      Tag[]      @relation("BookTags")
+  reviews   Review[]
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 
+  // Prevents the same owner from importing the same ISBN twice. NULL isbns
+  // (manual entries) are treated as distinct by SQLite, so they don't clash.
+  @@unique([ownerId, isbn])
   @@index([ownerId])
   @@index([ownerId, status])
 }
@@ -37,6 +45,23 @@ enum BookStatus {
   WANT_TO_READ
   READING
   READ
+}
+
+// A user's personal relationship with a book: their star rating (1-5, validated
+// in Zod) and free-text notes. One review per (user, book) pair.
+model Review {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  bookId    String
+  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  rating    Int?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, bookId])
+  @@index([bookId])
 }
 
 model Tag {

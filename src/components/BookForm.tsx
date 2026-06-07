@@ -6,7 +6,7 @@ import gsap from 'gsap'
 import { useGSAP } from '@gsap/react'
 import { DURATION, EASE, prefersReducedMotion } from '@/lib/animations'
 import StarRating from './StarRating'
-import type { Book } from '@/generated/prisma/client'
+import type { BookWithReview } from '@/adapters/repository/BookRepository'
 import type { FormState } from '@/actions/books'
 
 const STATUS_OPTIONS = [
@@ -17,7 +17,7 @@ const STATUS_OPTIONS = [
 
 interface Props {
   action: (prevState: FormState, formData: FormData) => Promise<FormState>
-  book?: Book
+  book?: BookWithReview
 }
 
 export default function BookForm({ action, book }: Props) {

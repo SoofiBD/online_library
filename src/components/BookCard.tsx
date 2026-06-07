@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import type { Book } from '@/generated/prisma/client'
+import type { BookWithReview } from '@/adapters/repository/BookRepository'
 
 const STATUS_LABELS: Record<string, string> = {
   WANT_TO_READ: 'Want to Read',
@@ -8,7 +8,7 @@ const STATUS_LABELS: Record<string, string> = {
   READ: 'Read',
 }
 
-export default function BookCard({ book }: { book: Book }) {
+export default function BookCard({ book }: { book: BookWithReview }) {
   const stars = book.rating
     ? Array.from({ length: 5 }, (_, i) => (i < book.rating! ? '★' : '☆')).join('')
     : null

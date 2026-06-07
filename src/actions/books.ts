@@ -35,6 +35,7 @@ export async function createBook(
 
   const service = createBookService()
   const book = await service.create(result.data)
+  revalidatePath('/')
   redirect(`/books/${book.id}`)
 }
 
@@ -52,6 +53,7 @@ export async function updateBook(
 
   const service = createBookService()
   await service.update(id, result.data)
+  revalidatePath('/')
   revalidatePath(`/books/${id}`)
   redirect(`/books/${id}`)
 }
