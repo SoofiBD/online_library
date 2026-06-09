@@ -1,4 +1,5 @@
 import type { AuthProvider } from '@/adapters/auth/AuthProvider'
+import type { BookStatus } from '@/generated/prisma/client'
 import type {
   BookRepository,
   BookFilter,
@@ -9,6 +10,7 @@ import type {
 import type { StorageAdapter } from '@/adapters/storage/StorageAdapter'
 import type { BookLookupService, LookupResult } from '@/services/lookup'
 import { toEan13 } from '@/lib/isbn'
+import { createBookSchema } from '@/lib/schemas'
 
 /** Thrown when a scan/manual payload can't be turned into a saveable book. */
 export class BookValidationError extends Error {}
@@ -77,16 +79,22 @@ export class BookService {
     const ownerId = await this.auth.getCurrentUserId()
     const ean13 = input.isbn ? toEan13(input.isbn) : null
 
-    if (ean13) {
-      const existing = await this.repo.findByIsbn(ownerId, ean13)
-      if (existing) return existing
-    }
-
     let title = input.title?.trim() || null
     let author = input.author ?? null
     let coverPath = input.coverPath ?? null
+    let status: BookStatus = 'WANT_TO_READ'
 
-    if (!title && ean13 && this.lookupService) {
+    // If the owner already has this book, reuse its catalog data so a bare
+    // (ISBN-only) re-scan doesn't trigger a redundant network lookup, and keep
+    // its current reading status. This is a read-only short-circuit; the actual
+    // write still happens atomically in repo.upsertByIsbn below.
+    const existing = ean13 ? await this.repo.findByIsbn(ownerId, ean13) : null
+    if (existing) {
+      title = title ?? existing.title
+      author = author ?? existing.author
+      coverPath = coverPath ?? existing.coverPath
+      status = existing.status
+    } else if (!title && ean13 && this.lookupService) {
       const found = await this.lookupService.lookup(ean13)
       if (found) {
         title = found.title
@@ -99,32 +107,33 @@ export class BookService {
       throw new BookValidationError('Could not resolve a title for this book')
     }
 
-    try {
-      return await this.repo.create(ownerId, {
-        isbn: ean13,
-        title,
-        author,
-        coverPath,
-        status: 'WANT_TO_READ',
-        rating: input.rating ?? null,
-        notes: input.notes ?? null,
-      })
-    } catch (error) {
-      // Lost a race on the (ownerId, isbn) unique index -> return the winner.
-      if (ean13 && isUniqueViolation(error)) {
-        const existing = await this.repo.findByIsbn(ownerId, ean13)
-        if (existing) return existing
-      }
-      throw error
+    // (a) Validate the fully resolved record via Zod before opening the write
+    // transaction — rating bounds (1-5), required title, status enum. Kept
+    // outside repo.upsertByIsbn so no DB transaction is held open during
+    // CPU-bound validation.
+    const parsed = createBookSchema.safeParse({
+      isbn: ean13,
+      title,
+      author,
+      coverPath,
+      status,
+      rating: input.rating ?? null,
+      notes: input.notes ?? null,
+    })
+    if (!parsed.success) {
+      throw new BookValidationError(
+        parsed.error.issues.map((issue) => issue.message).join('; '),
+      )
     }
-  }
-}
 
-function isUniqueViolation(error: unknown): boolean {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    (error as { code?: string }).code === 'P2002'
-  )
+    return this.repo.upsertByIsbn(ownerId, {
+      isbn: parsed.data.isbn ?? null,
+      title: parsed.data.title,
+      author: parsed.data.author ?? null,
+      coverPath: parsed.data.coverPath ?? null,
+      status: parsed.data.status,
+      rating: parsed.data.rating ?? null,
+      notes: parsed.data.notes ?? null,
+    })
+  }
 }

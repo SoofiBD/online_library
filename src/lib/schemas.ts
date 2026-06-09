@@ -47,6 +47,43 @@ export const scanBookSchema = z
     { message: 'Provide at least a title or an ISBN' },
   )
 
+// --- Review (bounded context) -------------------------------------------------
+// These validate a Review payload *on its own*, decoupled from the Book form, so
+// the future cross-share milestone can create/edit a user's evaluation of an
+// already-cataloged book without touching the immutable catalog metadata.
+//
+// `userId` is intentionally absent: it is supplied server-side by the
+// LocalOwnerProvider, never trusted from the client (same pattern as `ownerId`
+// on the Book schemas). `bookId` identifies which catalog entry is being rated.
+
+// On create, a rating is the whole point of the interaction, so it is required
+// and strictly bounded 1–5 (the DB column stays nullable for the book-form path).
+export const createReviewSchema = z.object({
+  bookId: z.string().min(1, 'bookId is required'),
+  rating: z.coerce
+    .number()
+    .int('Rating must be a whole number')
+    .min(1, 'Rating must be between 1 and 5')
+    .max(5, 'Rating must be between 1 and 5'),
+  notes: z.string().trim().optional().nullable(),
+})
+
+// On update (PATCH semantics) every field is optional; `null` is allowed so a
+// caller can explicitly clear a previously set rating or notes. `bookId` is
+// omitted on purpose — a review never migrates to a different book.
+export const updateReviewSchema = z.object({
+  rating: z.coerce
+    .number()
+    .int('Rating must be a whole number')
+    .min(1, 'Rating must be between 1 and 5')
+    .max(5, 'Rating must be between 1 and 5')
+    .optional()
+    .nullable(),
+  notes: z.string().trim().optional().nullable(),
+})
+
 export type CreateBookInput = z.infer<typeof createBookSchema>
 export type UpdateBookInput = z.infer<typeof updateBookSchema>
+export type CreateReviewInput = z.infer<typeof createReviewSchema>
+export type UpdateReviewInput = z.infer<typeof updateReviewSchema>
 export type ScanBookInput = z.infer<typeof scanBookSchema>

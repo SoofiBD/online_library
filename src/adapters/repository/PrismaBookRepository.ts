@@ -117,6 +117,40 @@ export class PrismaBookRepository implements BookRepository {
     return flatten(row)
   }
 
+  async upsertByIsbn(ownerId: string, data: BookCreateData): Promise<BookWithReview> {
+    const { rating, notes, isbn, status, ...metadata } = data
+
+    const row = await prisma.$transaction(async (tx) => {
+      // (b) Find-or-create the generic Book by its sanitized ISBN. With a real
+      // ISBN we lean on the (ownerId, isbn) unique index for an atomic upsert;
+      // a NULL isbn has no dedup key, so it is always a fresh manual entry.
+      const book = isbn
+        ? await tx.book.upsert({
+            where: { ownerId_isbn: { ownerId, isbn } },
+            create: { ...metadata, isbn, status: status ?? 'WANT_TO_READ', ownerId },
+            // Refresh catalog fields on re-scan; leave the user's `status` alone.
+            update: { ...metadata },
+          })
+        : await tx.book.create({
+            data: { ...metadata, isbn: null, status: status ?? 'WANT_TO_READ', ownerId },
+          })
+
+      // (c) Create-or-update the owner's Review. Skipped when the scan carried
+      // neither a rating nor notes, so a bare re-scan never wipes a prior review.
+      if (rating != null || notes != null) {
+        await tx.review.upsert({
+          where: { userId_bookId: { userId: ownerId, bookId: book.id } },
+          create: { userId: ownerId, bookId: book.id, rating: rating ?? null, notes: notes ?? null },
+          update: { rating: rating ?? null, notes: notes ?? null },
+        })
+      }
+
+      return tx.book.findFirstOrThrow({ where: { id: book.id }, include: reviewInclude(ownerId) })
+    })
+
+    return flatten(row)
+  }
+
   async delete(ownerId: string, id: string): Promise<void> {
     const exists = await prisma.book.findFirst({ where: { id, ownerId } })
     if (!exists) throw new Error('Book not found')

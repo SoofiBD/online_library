@@ -40,5 +40,13 @@ export interface BookRepository {
   findByIsbn(ownerId: string, isbn: string): Promise<BookWithReview | null>
   create(ownerId: string, data: BookCreateData): Promise<BookWithReview>
   update(ownerId: string, id: string, data: BookUpdateData): Promise<BookWithReview>
+  /**
+   * Atomically find-or-create the owner's Book for `data.isbn` and create-or-
+   * update the owner's Review (rating + notes) in a single transaction. On
+   * re-scan the catalog metadata is refreshed but the user's reading `status`
+   * is preserved. When `data.isbn` is null there is no dedup key, so a fresh
+   * Book is always created. This is the write primitive behind the scan flow.
+   */
+  upsertByIsbn(ownerId: string, data: BookCreateData): Promise<BookWithReview>
   delete(ownerId: string, id: string): Promise<void>
 }
