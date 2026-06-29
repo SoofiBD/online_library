@@ -54,3 +54,21 @@ export function toEan13(raw: string): string | null {
   }
   return null
 }
+
+/**
+ * Converts a canonical EAN-13 string back to ISBN-10 when the EAN starts with
+ * the 978 prefix (Bookland). Returns `null` for 979-prefix EANs that cannot
+ * map to ISBN-10, or when the input is not a valid EAN-13.
+ */
+export function toIsbn10(ean13: string): string | null {
+  if (!isValidEan13(ean13)) return null
+  if (!ean13.startsWith('978')) return null
+
+  // Drop the 978 prefix, take first 9 digits, compute ISBN-10 check digit.
+  const body = ean13.slice(3, 12) // 9 digits
+  let sum = 0
+  for (let i = 0; i < 9; i++) sum += Number(body[i]) * (9 - i)
+  const remainder = sum % 11
+  const check = remainder === 0 ? '0' : remainder === 1 ? 'X' : String(11 - remainder)
+  return body + check
+}

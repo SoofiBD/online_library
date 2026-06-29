@@ -14,6 +14,8 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
+  // Allow LAN access for phone-to-PC sync during development.
+  // In production, use `next start -H 0.0.0.0` to bind to all interfaces.
   ...(lanDevOrigins.length ? { allowedDevOrigins: lanDevOrigins } : {}),
 }
 

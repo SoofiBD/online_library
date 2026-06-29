@@ -13,6 +13,7 @@ model User {
   name      String?
   books     Book[]
   reviews   Review[]
+  devices   Device[]
   createdAt DateTime @default(now())
 }
 
@@ -71,4 +72,38 @@ model Tag {
   books   Book[] @relation("BookTags")
 
   @@unique([ownerId, name])
+}
+
+// --- Phase 2: Multi-device sync ---
+
+// Tracks paired devices (phone, tablet, another PC) that belong to an owner.
+// Created during the pairing flow; used by DeviceAuthProvider to resolve identity.
+model Device {
+  id         String   @id @default(cuid())
+  deviceId   String   @unique // client-generated fingerprint (localStorage UUID)
+  ownerId    String
+  owner      User     @relation(fields: [ownerId], references: [id])
+  name       String?  // human-readable: "iPhone 15", "Chrome on MacBook"
+  pairedAt   DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+
+  @@index([ownerId])
+}
+
+// Append-only change log for cross-device sync. Each mutation (create/update/
+// delete) on Book, Review, or Tag produces one event. Clients pull events
+// newer than their last sync timestamp; conflicts are resolved by "last write
+// wins" using the `version` counter.
+model SyncEvent {
+  id         String   @id @default(cuid())
+  ownerId    String
+  entityType String   // "book" | "review" | "tag"
+  entityId   String
+  action     String   // "create" | "update" | "delete"
+  payload    String?  // JSON diff of changed fields
+  version    Int      @default(1)
+  createdAt  DateTime @default(now())
+
+  @@index([ownerId, createdAt])
+  @@index([ownerId, entityType, entityId])
 }

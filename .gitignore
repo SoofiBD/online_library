@@ -54,3 +54,24 @@ next-env.d.ts
 /CLAUDE.md
 /AGENTS.md
 /docs/superpowers/
+/ROADMAP.md
+/DATABASE.md
+/SETUP.md
+
+# AI assistant config files
+.claude/
+.cursor/
+.copilot/
+.aider*
+copilot-instructions.md
+.github/copilot-instructions.md
+
+# misc
+*.log
+*.tmp
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.code-workspace
