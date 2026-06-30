@@ -1,20 +1,23 @@
 import Link from 'next/link'
 import BookForm from '@/components/BookForm'
 import { createBook } from '@/actions/books'
+import FadeIn from '@/components/FadeIn'
 
 export default function NewBookPage() {
   return (
-    <div className="max-w-lg mx-auto px-4 py-6">
-      <header className="flex items-center gap-3 mb-6">
-        <Link
-          href="/"
-          className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-        >
-          ← Back
-        </Link>
-        <h1 className="text-xl font-bold">New Book</h1>
-      </header>
-      <BookForm action={createBook} />
+    <div className="px-[clamp(14px,4vw,40px)] pt-[clamp(18px,4vw,46px)] pb-[90px]">
+      <div className="max-w-[880px] mx-auto">
+        <FadeIn>
+          <Link
+            href="/"
+            className="text-[13.5px] font-semibold tracking-[.3px] text-[color:var(--color-muted)] no-underline mb-[22px] inline-block hover:text-[color:var(--color-accent)]"
+          >
+            ← Cancel
+          </Link>
+          <h1 className="font-serif-display font-semibold text-[clamp(28px,5vw,40px)] leading-[1.05] tracking-[-.5px] mb-[30px]">Add to your library</h1>
+          <BookForm action={createBook} />
+        </FadeIn>
+      </div>
     </div>
   )
 }

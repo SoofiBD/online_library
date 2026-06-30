@@ -26,9 +26,10 @@ export default function AnimatedBookList({ books }: { books: BookWithReview[] })
 
   if (books.length === 0) {
     return (
-      <div className="text-center py-16 text-gray-400">
-        <p className="text-5xl mb-4">📚</p>
-        <p className="text-sm">No books yet. Add your first book!</p>
+      <div className="text-center py-[70px] px-5 text-[color:var(--color-faint)]">
+        <div className="text-[40px] mb-2.5 opacity-50">❧</div>
+        <div className="font-serif-display italic text-xl text-[#6f6253]">No volumes on this shelf yet.</div>
+        <div className="text-[13.5px] mt-1.5">Try another search, or add a new book.</div>
       </div>
     )
   }
@@ -36,7 +37,8 @@ export default function AnimatedBookList({ books }: { books: BookWithReview[] })
   return (
     <div
       ref={container}
-      className="divide-y divide-gray-100 dark:divide-gray-800"
+      className="grid gap-x-5 gap-y-10"
+      style={{ gridTemplateColumns: 'repeat(auto-fill,minmax(158px,1fr))' }}
     >
       {books.map((book) => (
         <BookCard key={book.id} book={book} />

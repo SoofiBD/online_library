@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createBookSchema, updateBookSchema } from '@/lib/schemas'
 import { createBookService } from '@/lib/container'
+import { progressForStatus, nextStatus } from '@/lib/theme/covers'
+import type { BookStatus } from '@/generated/prisma/client'
 
 export type FormState = { errors?: Record<string, string[]> } | undefined
 
@@ -12,13 +14,20 @@ function extractFormData(formData: FormData) {
     const val = formData.get(key) as string | null
     return val && val.trim() ? val.trim() : null
   }
+  const status = ((formData.get('status') as string) || 'WANT_TO_READ') as BookStatus
+  const tagsRaw = (formData.get('tags') as string) || ''
+  const tags = tagsRaw.split(',').map((t) => t.trim()).filter(Boolean)
   return {
     title: (formData.get('title') as string)?.trim() ?? '',
     author: str('author'),
     coverPath: str('coverPath'),
+    coverColor: str('coverColor'),
     notes: str('notes'),
     rating: formData.get('rating') || null,
-    status: (formData.get('status') as string) || 'WANT_TO_READ',
+    status,
+    tags,
+    // Progress is derived from status (the comp has no manual progress input).
+    progress: progressForStatus(status),
   }
 }
 
@@ -66,4 +75,19 @@ export async function deleteBook(
   await service.delete(id)
   revalidatePath('/')
   redirect('/')
+}
+
+// Advances a book's reading status (Want to Read → Reading → Read → …) and
+// re-derives its progress, driven by the status pill on the detail view.
+export async function cycleStatus(id: string): Promise<void> {
+  const service = createBookService()
+  const book = await service.getById(id)
+  if (!book) return
+  const next = nextStatus(book.status)
+  await service.update(id, {
+    status: next,
+    progress: progressForStatus(next, book.progress),
+  })
+  revalidatePath('/')
+  revalidatePath(`/books/${id}`)
 }

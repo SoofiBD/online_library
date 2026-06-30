@@ -3,7 +3,7 @@
 import { useRouter, usePathname } from 'next/navigation'
 import { useRef } from 'react'
 
-const STATUSES = [
+const CHIPS = [
   { value: '', label: 'All' },
   { value: 'WANT_TO_READ', label: 'Want to Read' },
   { value: 'READING', label: 'Reading' },
@@ -13,19 +13,23 @@ const STATUSES = [
 interface Props {
   q?: string
   status?: string
+  sort?: string
+  counts: Record<string, number>
 }
 
-export default function SearchFilter({ q, status }: Props) {
+export default function SearchFilter({ q, status, sort, counts }: Props) {
   const router = useRouter()
   const pathname = usePathname()
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
-  function buildUrl(updates: { q?: string; status?: string }) {
+  function buildUrl(updates: { q?: string; status?: string; sort?: string }) {
     const params = new URLSearchParams()
     const nextQ = 'q' in updates ? updates.q : q
     const nextStatus = 'status' in updates ? updates.status : status
+    const nextSort = 'sort' in updates ? updates.sort : sort
     if (nextQ) params.set('q', nextQ)
     if (nextStatus) params.set('status', nextStatus)
+    if (nextSort && nextSort !== 'recent') params.set('sort', nextSort)
     const query = params.toString()
     return query ? `${pathname}?${query}` : pathname
   }
@@ -33,38 +37,55 @@ export default function SearchFilter({ q, status }: Props) {
   function handleSearch(e: React.ChangeEvent<HTMLInputElement>) {
     clearTimeout(debounceRef.current)
     const value = e.target.value
-    debounceRef.current = setTimeout(() => {
-      router.push(buildUrl({ q: value }))
-    }, 300)
+    debounceRef.current = setTimeout(() => router.push(buildUrl({ q: value })), 300)
   }
 
-  function handleStatus(value: string) {
-    router.push(buildUrl({ status: value }))
-  }
+  const fieldCls =
+    'px-4 py-3 border border-[color:var(--color-line)] bg-[color:var(--color-card)] rounded-xl text-sm text-[color:var(--color-ink)] outline-none'
 
   return (
-    <div className="mb-4 space-y-3">
-      <input
-        type="search"
-        defaultValue={q}
-        onChange={handleSearch}
-        placeholder="Search by book or author..."
-        className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm"
-      />
-      <div className="flex gap-2 flex-wrap">
-        {STATUSES.map((s) => (
-          <button
-            key={s.value}
-            onClick={() => handleStatus(s.value)}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-              (status ?? '') === s.value
-                ? 'bg-amber-500 text-white'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-            }`}
-          >
-            {s.label}
-          </button>
-        ))}
+    <div className="mb-[34px]">
+      <div className="flex items-center gap-3 flex-wrap mb-[18px]">
+        <div className="relative flex-1 min-w-[220px]">
+          <span className="absolute left-[15px] top-1/2 -translate-y-1/2 text-[color:var(--color-faint)] text-[15px]">⌕</span>
+          <input
+            type="search"
+            defaultValue={q}
+            onChange={handleSearch}
+            placeholder="Search titles, authors, tags…"
+            className={`${fieldCls} w-full pl-[38px] focus:border-[color:var(--color-accent)]`}
+          />
+        </div>
+        <select
+          defaultValue={sort ?? 'recent'}
+          onChange={(e) => router.push(buildUrl({ sort: e.target.value }))}
+          className={`${fieldCls} cursor-pointer text-[color:var(--color-muted)]`}
+        >
+          <option value="recent">Recently added</option>
+          <option value="title">Title A–Z</option>
+          <option value="rating">Highest rated</option>
+        </select>
+      </div>
+      <div className="flex gap-2.5 flex-wrap">
+        {CHIPS.map((chip) => {
+          const active = (status ?? '') === chip.value
+          const count = counts[chip.value] ?? 0
+          return (
+            <button
+              key={chip.value}
+              onClick={() => router.push(buildUrl({ status: chip.value }))}
+              className="cursor-pointer text-[13px] font-semibold tracking-[.2px] px-[15px] py-2 rounded-full inline-flex items-center gap-[7px] transition-transform active:scale-95 border"
+              style={
+                active
+                  ? { background: 'var(--color-accent)', color: 'var(--color-accent-fg)', borderColor: 'var(--color-accent)' }
+                  : { background: 'transparent', color: '#5b4f40', borderColor: '#ddccb0' }
+              }
+            >
+              {chip.label}
+              <span className="text-[11px] opacity-70 font-bold">{count}</span>
+            </button>
+          )
+        })}
       </div>
     </div>
   )
