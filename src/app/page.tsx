@@ -4,6 +4,7 @@ import { createBookService } from '@/lib/container'
 import AnimatedBookList from '@/components/AnimatedBookList'
 import SearchFilter from '@/components/SearchFilter'
 import FadeIn from '@/components/FadeIn'
+import ThemeToggle from '@/components/ThemeToggle'
 import type { BookStatus } from '@/generated/prisma/client'
 
 const VALID_STATUSES = new Set(['WANT_TO_READ', 'READING', 'READ'])
@@ -47,13 +48,16 @@ export default async function HomePage({ searchParams }: Props) {
               </div>
               <h1 className="font-serif-display font-semibold text-[clamp(38px,6vw,58px)] leading-none mt-2.5 tracking-[-1px]">Biblio</h1>
             </div>
-            <Link
-              href="/books/new"
-              className="bg-[color:var(--color-accent)] text-[color:var(--color-accent-fg)] text-sm font-semibold px-[22px] py-[13px] rounded-[11px] no-underline transition-transform active:scale-95 hover:-translate-y-0.5"
-              style={{ boxShadow: '0 10px 22px rgba(70,30,30,.22)' }}
-            >
-              ＋ Add a book
-            </Link>
+            <div className="flex items-center gap-2.5">
+              <ThemeToggle />
+              <Link
+                href="/books/new"
+                className="bg-[color:var(--color-accent)] text-[color:var(--color-accent-fg)] text-sm font-semibold px-[22px] py-[13px] rounded-[11px] no-underline transition-transform active:scale-95 hover:-translate-y-0.5"
+                style={{ boxShadow: '0 10px 22px rgba(70,30,30,.22)' }}
+              >
+                ＋ Add a book
+              </Link>
+            </div>
           </header>
           <Suspense>
             <SearchFilter q={params.q} status={params.status} sort={sort} counts={counts} />

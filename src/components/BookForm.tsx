@@ -3,6 +3,7 @@
 import { useActionState, useState, useRef } from 'react'
 import BookCover3D from './BookCover3D'
 import StarRating from './StarRating'
+import TagInput from './TagInput'
 import { COVER_KEYS, COVERS, STATUS } from '@/lib/theme/covers'
 import type { BookWithReview } from '@/adapters/repository/BookRepository'
 import type { FormState } from '@/actions/books'
@@ -124,14 +125,8 @@ export default function BookForm({ action, book }: Props) {
         </div>
 
         <div>
-          <label htmlFor="tags" className={label}>TAGS</label>
-          <input
-            id="tags"
-            name="tags"
-            defaultValue={book?.tags.map((t) => t.name).join(', ') ?? ''}
-            placeholder="Comma separated, e.g. Gothic, Mystery"
-            className={field}
-          />
+          <span className={label}>TAGS</span>
+          <TagInput name="tags" defaultValue={book?.tags.map((t) => t.name) ?? []} />
         </div>
 
         <div>

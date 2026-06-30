@@ -14,6 +14,18 @@
 
 :root { color-scheme: light; }
 
+html.dark {
+  --color-paper: #161310;
+  --color-card: #211d18;
+  --color-ink: #f0e8da;
+  --color-muted: #b3a48c;
+  --color-faint: #8c7c66;
+  --color-line: #38312a;
+  --color-accent: #c4515c;
+  --color-accent-fg: #1a1410;
+  color-scheme: dark;
+}
+
 body {
   font-family: var(--font-hanken), system-ui, sans-serif;
   color: var(--color-ink);
@@ -24,7 +36,15 @@ body {
   min-height: 100vh;
 }
 
+html.dark body {
+  background:
+    radial-gradient(130% 90% at 50% -15%, #221d17 0%, transparent 55%),
+    radial-gradient(100% 70% at 105% 115%, #2a221a 0%, transparent 55%),
+    var(--color-paper);
+}
+
 ::selection { background: #e7d6ad; }
+html.dark ::selection { background: #4a3f30; }
 
 .font-serif-display { font-family: var(--font-spectral), Georgia, serif; }
 
