@@ -49,16 +49,23 @@ export class PrismaBookRepository implements BookRepository {
   // then connect-or-create against the (ownerId, name) unique index reuses an
   // owner's existing tag or mints a new one. Returns undefined to leave the
   // relation untouched when no tags array was supplied.
-  private tagConnect(ownerId: string, tags?: string[]) {
+  // For `create`: no existing relations, so only connectOrCreate is valid.
+  private tagCreate(ownerId: string, tags?: string[]) {
     if (!tags) return undefined
     const unique = Array.from(new Set(tags.map((t) => t.trim()).filter(Boolean)))
     return {
-      set: [],
       connectOrCreate: unique.map((name) => ({
         where: { ownerId_name: { ownerId, name } },
         create: { ownerId, name },
       })),
     }
+  }
+
+  // For `update`: `set: []` clears the current links so the result is exactly
+  // the submitted tag set. `set` is invalid inside a nested `create`.
+  private tagReplace(ownerId: string, tags?: string[]) {
+    const base = this.tagCreate(ownerId, tags)
+    return base ? { set: [], ...base } : undefined
   }
 
   async list(ownerId: string, filter?: BookFilter): Promise<BookWithReview[]> {
@@ -109,7 +116,7 @@ export class PrismaBookRepository implements BookRepository {
 
     const row = await prisma.$transaction(async (tx) => {
       const book = await tx.book.create({
-        data: { ...bookData, ownerId, tags: this.tagConnect(ownerId, tags) },
+        data: { ...bookData, ownerId, tags: this.tagCreate(ownerId, tags) },
       })
 
       // Only create a Review when the user actually rated, wrote, or has progress.
@@ -137,7 +144,7 @@ export class PrismaBookRepository implements BookRepository {
 
       await tx.book.update({
         where: { id },
-        data: { ...bookData, ...(tags ? { tags: this.tagConnect(ownerId, tags) } : {}) },
+        data: { ...bookData, ...(tags ? { tags: this.tagReplace(ownerId, tags) } : {}) },
       })
 
       // Keep the user's review in lock-step with the form. Upsert so the row is
@@ -163,7 +170,8 @@ export class PrismaBookRepository implements BookRepository {
 
   async upsertByIsbn(ownerId: string, data: BookCreateData): Promise<BookWithReview> {
     const { rating, notes, progress, tags, isbn, status, ...metadata } = data
-    const tagWrite = this.tagConnect(ownerId, tags)
+    const tagCreate = this.tagCreate(ownerId, tags)
+    const tagReplace = this.tagReplace(ownerId, tags)
 
     const row = await prisma.$transaction(async (tx) => {
       // (b) Find-or-create the generic Book by its sanitized ISBN. With a real
@@ -172,12 +180,12 @@ export class PrismaBookRepository implements BookRepository {
       const book = isbn
         ? await tx.book.upsert({
             where: { ownerId_isbn: { ownerId, isbn } },
-            create: { ...metadata, isbn, status: status ?? 'WANT_TO_READ', ownerId, tags: tagWrite },
+            create: { ...metadata, isbn, status: status ?? 'WANT_TO_READ', ownerId, tags: tagCreate },
             // Refresh catalog fields on re-scan; leave the user's `status` alone.
-            update: { ...metadata, ...(tagWrite ? { tags: tagWrite } : {}) },
+            update: { ...metadata, ...(tagReplace ? { tags: tagReplace } : {}) },
           })
         : await tx.book.create({
-            data: { ...metadata, isbn: null, status: status ?? 'WANT_TO_READ', ownerId, tags: tagWrite },
+            data: { ...metadata, isbn: null, status: status ?? 'WANT_TO_READ', ownerId, tags: tagCreate },
           })
 
       // (c) Create-or-update the owner's Review. Skipped when the scan carried
