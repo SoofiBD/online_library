@@ -1,48 +1,41 @@
-import Image from 'next/image'
 import Link from 'next/link'
+import BookCover3D from './BookCover3D'
+import StarFraction from './StarFraction'
+import { statusOf } from '@/lib/theme/covers'
 import type { BookWithReview } from '@/adapters/repository/BookRepository'
 
-const STATUS_LABELS: Record<string, string> = {
-  WANT_TO_READ: 'Want to Read',
-  READING: 'Reading',
-  READ: 'Read',
-}
-
 export default function BookCard({ book }: { book: BookWithReview }) {
-  const stars = book.rating
-    ? Array.from({ length: 5 }, (_, i) => (i < book.rating! ? '★' : '☆')).join('')
-    : null
-
+  const st = statusOf(book.status)
   return (
     <Link
       href={`/books/${book.id}`}
-      className="group flex items-center gap-4 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition active:scale-[0.99]"
+      className="bc3d-hover block text-center cursor-pointer no-underline text-[color:var(--color-ink)]"
     >
-      <div className="w-12 h-16 flex-shrink-0 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden transition-shadow group-hover:shadow-md">
-        {book.coverPath ? (
-          <Image
-            src={book.coverPath}
-            alt={book.title}
-            width={48}
-            height={64}
-            className="object-cover w-full h-full"
+      <div className="mb-4">
+        <BookCover3D
+          colorKey={book.coverColor}
+          title={book.title}
+          author={book.author}
+          image={book.coverPath}
+          size="grid"
+        />
+      </div>
+      <div className="font-serif-display font-medium text-[15px] leading-tight mb-0.5">{book.title}</div>
+      <div className="text-[12.5px] text-[color:var(--color-muted)] mb-1.5">{book.author ?? 'Unknown'}</div>
+      <div className="flex items-center justify-center gap-2">
+        <StarFraction rating={book.rating} size={12} />
+        <span className="text-[10px] font-bold tracking-wider uppercase" style={{ color: st.color }}>
+          {st.label}
+        </span>
+      </div>
+      {book.status === 'READING' && (
+        <div className="w-[74px] h-1 rounded-[3px] bg-[#e6dac4] mx-auto mt-2 overflow-hidden">
+          <div
+            className="h-full rounded-[3px] origin-left"
+            style={{ background: st.color, width: `${book.progress ?? 0}%`, animation: 'barGrow 1s cubic-bezier(.2,.7,.2,1) both' }}
           />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-400 text-lg">
-            📖
-          </div>
-        )}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="font-medium truncate">{book.title}</p>
-        <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-          {book.author ?? '—'}
-        </p>
-        <div className="flex items-center gap-2 mt-0.5 text-sm">
-          {stars && <span className="text-amber-400 text-xs">{stars}</span>}
-          <span className="text-gray-400 text-xs">{STATUS_LABELS[book.status]}</span>
         </div>
-      </div>
+      )}
     </Link>
   )
 }

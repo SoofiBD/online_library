@@ -6,14 +6,19 @@ export const bookStatusSchema = z.enum(['WANT_TO_READ', 'READING', 'READ'])
 // same form as the book itself, so they remain part of the book input and are
 // split off into a Review inside the repository transaction.
 const ratingSchema = z.coerce.number().int().min(1).max(5).optional().nullable()
+const progressSchema = z.coerce.number().int().min(0).max(100).optional().nullable()
+const tagsSchema = z.array(z.string().trim().min(1)).optional()
 
 export const createBookSchema = z.object({
   isbn: z.string().optional().nullable(),
   title: z.string().min(1, 'Title is required'),
   author: z.string().optional().nullable(),
   coverPath: z.string().optional().nullable(),
+  coverColor: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
   rating: ratingSchema,
+  progress: progressSchema,
+  tags: tagsSchema,
   status: bookStatusSchema.default('WANT_TO_READ'),
 })
 
@@ -22,8 +27,11 @@ export const updateBookSchema = z.object({
   title: z.string().min(1, 'Title is required').optional(),
   author: z.string().optional().nullable(),
   coverPath: z.string().optional().nullable(),
+  coverColor: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
   rating: ratingSchema,
+  progress: progressSchema,
+  tags: tagsSchema,
   status: bookStatusSchema.optional(),
 })
 

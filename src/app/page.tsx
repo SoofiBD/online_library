@@ -3,39 +3,64 @@ import { Suspense } from 'react'
 import { createBookService } from '@/lib/container'
 import AnimatedBookList from '@/components/AnimatedBookList'
 import SearchFilter from '@/components/SearchFilter'
+import FadeIn from '@/components/FadeIn'
 import type { BookStatus } from '@/generated/prisma/client'
 
 const VALID_STATUSES = new Set(['WANT_TO_READ', 'READING', 'READ'])
+const VALID_SORTS = new Set(['recent', 'title', 'rating'])
 
 interface Props {
-  searchParams: Promise<{ q?: string; status?: string }>
+  searchParams: Promise<{ q?: string; status?: string; sort?: string }>
 }
 
 export default async function HomePage({ searchParams }: Props) {
   const params = await searchParams
   const status =
-    params.status && VALID_STATUSES.has(params.status)
-      ? (params.status as BookStatus)
-      : undefined
+    params.status && VALID_STATUSES.has(params.status) ? (params.status as BookStatus) : undefined
+  const sort = (params.sort && VALID_SORTS.has(params.sort) ? params.sort : 'recent') as
+    | 'recent'
+    | 'title'
+    | 'rating'
 
   const service = createBookService()
-  const books = await service.list({ q: params.q, status })
+  const [books, all] = await Promise.all([
+    service.list({ q: params.q, status, sort }),
+    service.list({}),
+  ])
+
+  const counts: Record<string, number> = {
+    '': all.length,
+    WANT_TO_READ: all.filter((b) => b.status === 'WANT_TO_READ').length,
+    READING: all.filter((b) => b.status === 'READING').length,
+    READ: all.filter((b) => b.status === 'READ').length,
+  }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6">
-      <header className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold tracking-tight">Biblio</h1>
-        <Link
-          href="/books/new"
-          className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition active:scale-95"
-        >
-          + Add
-        </Link>
-      </header>
-      <Suspense>
-        <SearchFilter q={params.q} status={params.status} />
-      </Suspense>
-      <AnimatedBookList books={books} />
+    <div className="px-[clamp(14px,4vw,40px)] pt-[clamp(18px,4vw,46px)] pb-[90px]">
+      <div className="max-w-[1140px] mx-auto">
+        <FadeIn>
+          <header className="flex items-end justify-between gap-5 flex-wrap mb-[30px]">
+            <div>
+              <div className="flex items-center gap-3">
+                <span className="w-[30px] h-0.5 bg-[color:var(--color-accent)] inline-block" />
+                <span className="text-[11px] tracking-[3.5px] uppercase text-[color:var(--color-faint)]">Your reading room</span>
+              </div>
+              <h1 className="font-serif-display font-semibold text-[clamp(38px,6vw,58px)] leading-none mt-2.5 tracking-[-1px]">Biblio</h1>
+            </div>
+            <Link
+              href="/books/new"
+              className="bg-[color:var(--color-accent)] text-[color:var(--color-accent-fg)] text-sm font-semibold px-[22px] py-[13px] rounded-[11px] no-underline transition-transform active:scale-95 hover:-translate-y-0.5"
+              style={{ boxShadow: '0 10px 22px rgba(70,30,30,.22)' }}
+            >
+              ＋ Add a book
+            </Link>
+          </header>
+          <Suspense>
+            <SearchFilter q={params.q} status={params.status} sort={sort} counts={counts} />
+          </Suspense>
+          <AnimatedBookList books={books} />
+        </FadeIn>
+      </div>
     </div>
   )
 }

@@ -3,6 +3,7 @@ import type { Book, BookStatus } from '@/generated/prisma/client'
 export interface BookFilter {
   q?: string
   status?: BookStatus
+  sort?: 'recent' | 'title' | 'rating'
 }
 
 // A Book joined with the current user's Review, flattened so existing consumers
@@ -11,6 +12,8 @@ export interface BookFilter {
 export type BookWithReview = Book & {
   rating: number | null
   notes: string | null
+  progress: number | null
+  tags: { id: string; name: string }[]
 }
 
 export interface BookCreateData {
@@ -18,10 +21,13 @@ export interface BookCreateData {
   title: string
   author?: string | null
   coverPath?: string | null
+  coverColor?: string | null
   status?: BookStatus
   // Routed into the user's Review inside the repository transaction:
   rating?: number | null
   notes?: string | null
+  progress?: number | null
+  tags?: string[]
 }
 
 export interface BookUpdateData {
@@ -29,9 +35,12 @@ export interface BookUpdateData {
   title?: string
   author?: string | null
   coverPath?: string | null
+  coverColor?: string | null
   status?: BookStatus
   rating?: number | null
   notes?: string | null
+  progress?: number | null
+  tags?: string[]
 }
 
 export interface BookRepository {

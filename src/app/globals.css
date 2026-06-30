@@ -1,7 +1,41 @@
 @import "tailwindcss";
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-  }
+@theme {
+  --color-paper: #f3ebd9;
+  --color-card: #fcf8ef;
+  --color-ink: #2b2018;
+  --color-muted: #8c7c66;
+  --color-faint: #9a8c76;
+  --color-line: #e0d4bf;
+  --color-accent: #8c2f39;
+  --color-accent-fg: #fbf3e6;
+  --radius-field: 12px;
+}
+
+:root { color-scheme: light; }
+
+body {
+  font-family: var(--font-hanken), system-ui, sans-serif;
+  color: var(--color-ink);
+  background:
+    radial-gradient(130% 90% at 50% -15%, #faf4e6 0%, transparent 55%),
+    radial-gradient(100% 70% at 105% 115%, #ecdfc6 0%, transparent 55%),
+    var(--color-paper);
+  min-height: 100vh;
+}
+
+::selection { background: #e7d6ad; }
+
+.font-serif-display { font-family: var(--font-spectral), Georgia, serif; }
+
+@keyframes viewIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@keyframes riseIn { from { opacity: 0; transform: translateY(22px) scale(.96); } to { opacity: 1; transform: none; } }
+@keyframes barGrow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes floatY { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+@keyframes popIn { 0% { transform: scale(.5); opacity: 0; } 60% { transform: scale(1.12); } 100% { transform: scale(1); opacity: 1; } }
+
+.bc3d-hover:hover .bc3d { transform: rotateY(-34deg) translateY(-8px) !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; }
 }

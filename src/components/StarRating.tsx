@@ -20,17 +20,12 @@ export default function StarRating({ name, defaultValue = 0 }: Props) {
     setValue((prev) => (prev === star ? 0 : star))
     if (prefersReducedMotion()) return
     const el = containerRef.current?.querySelectorAll('button')[star - 1]
-    if (el) {
-      gsap.fromTo(
-        el,
-        { scale: 0.8 },
-        { scale: 1, duration: 0.25, ease: 'power2.out' },
-      )
-    }
+    if (el) gsap.fromTo(el, { scale: 0.8 }, { scale: 1, duration: 0.25, ease: 'power2.out' })
   })
 
+  const shown = hover || value
   return (
-    <div ref={containerRef} className="flex items-center gap-0.5">
+    <div ref={containerRef} className="flex items-center gap-[5px]" onMouseLeave={() => setHover(0)}>
       <input type="hidden" name={name} value={value || ''} />
       {[1, 2, 3, 4, 5].map((star) => (
         <button
@@ -38,11 +33,11 @@ export default function StarRating({ name, defaultValue = 0 }: Props) {
           type="button"
           onClick={() => handleClick(star)}
           onMouseEnter={() => setHover(star)}
-          onMouseLeave={() => setHover(0)}
-          className="text-2xl text-amber-400 hover:scale-110 transition-transform leading-none"
+          className="text-[28px] leading-none transition-transform hover:scale-110 cursor-pointer bg-transparent border-0 p-0"
+          style={{ color: star <= shown ? '#bd8a2c' : '#ddccab' }}
           aria-label={`${star} stars`}
         >
-          {star <= (hover || value) ? '★' : '☆'}
+          ★
         </button>
       ))}
     </div>

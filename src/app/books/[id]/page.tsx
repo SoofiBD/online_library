@@ -1,16 +1,13 @@
-import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createBookService } from '@/lib/container'
 import { deleteBook } from '@/actions/books'
 import DeleteBookButton from '@/components/DeleteBookButton'
+import StatusCycleButton from '@/components/StatusCycleButton'
+import BookCover3D from '@/components/BookCover3D'
+import StarFraction from '@/components/StarFraction'
 import FadeIn from '@/components/FadeIn'
-
-const STATUS_LABELS: Record<string, string> = {
-  WANT_TO_READ: 'Want to Read',
-  READING: 'Reading',
-  READ: 'Read',
-}
+import { statusOf } from '@/lib/theme/covers'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -20,72 +17,92 @@ export default async function BookDetailPage({ params }: Props) {
   const { id } = await params
   const service = createBookService()
   const book = await service.getById(id)
-
   if (!book) notFound()
 
-  const stars = book.rating
-    ? Array.from({ length: 5 }, (_, i) => (i < book.rating! ? '★' : '☆')).join('')
-    : null
-
+  const st = statusOf(book.status)
   const boundDelete = deleteBook.bind(null, id)
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-6">
-      <FadeIn stagger>
-        <Link
-          href="/"
-          className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 mb-6 inline-block"
-        >
-          ← Library
-        </Link>
+    <div className="px-[clamp(14px,4vw,40px)] pt-[clamp(18px,4vw,46px)] pb-[90px]">
+      <div className="max-w-[760px] mx-auto">
+        <FadeIn>
+          <Link
+            href="/"
+            className="text-[13.5px] font-semibold tracking-[.3px] text-[color:var(--color-muted)] no-underline mb-[30px] inline-block hover:text-[color:var(--color-accent)]"
+          >
+            ← Back to library
+          </Link>
 
-        <div className="flex gap-5 mb-6">
-        <div className="w-28 h-40 flex-shrink-0 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden">
-          {book.coverPath ? (
-            <Image
-              src={book.coverPath}
-              alt={book.title}
-              width={112}
-              height={160}
-              className="object-cover w-full h-full"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-4xl">📖</div>
+          <div className="flex gap-[clamp(24px,5vw,46px)] flex-wrap items-start mb-[38px]">
+            <div className="mx-auto" style={{ animation: 'floatY 7s ease-in-out infinite' }}>
+              <BookCover3D
+                colorKey={book.coverColor}
+                title={book.title}
+                author={book.author}
+                image={book.coverPath}
+                size="detail"
+                spineLabel
+              />
+            </div>
+
+            <div className="flex-1 min-w-[260px]">
+              <StatusCycleButton id={book.id} status={book.status} />
+              <h1 className="font-serif-display font-semibold text-[clamp(28px,5vw,40px)] leading-[1.1] tracking-[-.5px] mb-2">{book.title}</h1>
+              <p className="font-serif-display italic text-[18px] text-[color:var(--color-muted)] mb-4">by {book.author ?? 'Unknown'}</p>
+
+              <div className="mb-[18px]">
+                <StarFraction rating={book.rating} size={19} />
+              </div>
+
+              {book.tags.length > 0 && (
+                <div className="flex gap-2 flex-wrap mb-5">
+                  {book.tags.map((t) => (
+                    <span
+                      key={t.id}
+                      className="text-[11.5px] font-semibold tracking-[.4px] text-[#7a6a54] bg-[#efe6d4] border border-[#e2d5bd] px-[11px] py-[5px] rounded-[7px]"
+                    >
+                      {t.name}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {book.status === 'READING' && (
+                <div className="bg-[color:var(--color-card)] border border-[#ece0cb] rounded-[13px] px-[17px] py-[15px] mb-6">
+                  <div className="flex justify-between text-xs font-bold tracking-[.5px] uppercase text-[color:var(--color-muted)] mb-2">
+                    <span>Reading progress</span>
+                    <span style={{ color: st.color }}>{book.progress ?? 0}%</span>
+                  </div>
+                  <div className="h-[7px] rounded-[5px] bg-[#ece0cb] overflow-hidden">
+                    <div
+                      className="h-full rounded-[5px] origin-left"
+                      style={{ background: `linear-gradient(90deg,${st.color},#c8763f)`, width: `${book.progress ?? 0}%`, animation: 'barGrow 1.1s cubic-bezier(.2,.7,.2,1) both' }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-2.5 flex-wrap items-center">
+                <Link
+                  href={`/books/${id}/edit`}
+                  className="bg-[color:var(--color-accent)] text-[color:var(--color-accent-fg)] text-sm font-semibold px-[26px] py-3 rounded-[11px] no-underline transition-transform active:scale-95 hover:-translate-y-0.5"
+                  style={{ boxShadow: '0 10px 20px rgba(70,30,30,.2)' }}
+                >
+                  Edit details
+                </Link>
+                <DeleteBookButton action={boundDelete} />
+              </div>
+            </div>
+          </div>
+
+          {book.notes && (
+            <div className="border-t border-[#e6dac4] pt-[26px]">
+              <div className="text-xs font-bold tracking-[1.5px] uppercase text-[#a08f78] mb-3.5">Notes</div>
+              <p className="font-serif-display text-[18px] leading-[1.62] text-[#3c3024] whitespace-pre-wrap max-w-[62ch] m-0">{book.notes}</p>
+            </div>
           )}
-        </div>
-        <div className="flex-1 min-w-0 pt-1">
-          <h1 className="text-xl font-bold mb-1 leading-tight">{book.title}</h1>
-          {book.author && (
-            <p className="text-gray-500 dark:text-gray-400 text-sm mb-2">{book.author}</p>
-          )}
-          <p className="text-sm font-medium text-amber-600 dark:text-amber-400 mb-1">
-            {STATUS_LABELS[book.status]}
-          </p>
-          {stars && <p className="text-amber-400 text-sm">{stars}</p>}
-        </div>
+        </FadeIn>
       </div>
-
-      {book.notes && (
-        <div className="mb-8">
-          <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
-            Notes
-          </h2>
-          <p className="text-gray-700 dark:text-gray-200 whitespace-pre-wrap text-sm leading-relaxed">
-            {book.notes}
-          </p>
-        </div>
-      )}
-
-      <div className="flex gap-3">
-        <Link
-          href={`/books/${id}/edit`}
-          className="flex-1 text-center bg-amber-500 hover:bg-amber-600 text-white py-2.5 rounded-lg font-medium text-sm transition active:scale-95"
-        >
-          Edit
-        </Link>
-        <DeleteBookButton action={boundDelete} />
-        </div>
-      </FadeIn>
     </div>
   )
 }
