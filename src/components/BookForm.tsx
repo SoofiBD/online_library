@@ -14,16 +14,19 @@ const STATUS_OPTIONS = Object.keys(STATUS) as BookStatus[]
 interface Props {
   action: (prevState: FormState, formData: FormData) => Promise<FormState>
   book?: BookWithReview
+  initialTitle?: string
+  initialAuthor?: string
+  initialCoverUrl?: string
 }
 
-export default function BookForm({ action, book }: Props) {
+export default function BookForm({ action, book, initialTitle, initialAuthor, initialCoverUrl }: Props) {
   const [state, formAction, isPending] = useActionState(action, undefined)
 
-  const [title, setTitle] = useState(book?.title ?? '')
-  const [author, setAuthor] = useState(book?.author ?? '')
+  const [title, setTitle] = useState(book?.title ?? initialTitle ?? '')
+  const [author, setAuthor] = useState(book?.author ?? initialAuthor ?? '')
   const [color, setColor] = useState<string>(book?.coverColor ?? 'garnet')
   const [status, setStatus] = useState<BookStatus>(book?.status ?? 'WANT_TO_READ')
-  const [coverPath, setCoverPath] = useState<string>(book?.coverPath ?? '')
+  const [coverPath, setCoverPath] = useState<string>(book?.coverPath ?? initialCoverUrl ?? '')
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)

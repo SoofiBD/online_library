@@ -10,7 +10,9 @@
     "lint": "next lint",
     "db:setup": "prisma migrate deploy && npx tsx prisma/seed.ts",
     "db:migrate": "prisma migrate dev",
-    "db:seed": "npx tsx prisma/seed.ts"
+    "db:seed": "npx tsx prisma/seed.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
@@ -34,6 +36,8 @@
     "prisma": "^7.8.0",
     "tailwindcss": "^4",
     "tsx": "^4.22.4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^3.2.6"
   }
 }

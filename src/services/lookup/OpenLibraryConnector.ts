@@ -1,5 +1,4 @@
-import { toIsbn10 } from '@/lib/isbn'
-import type { BookLookupConnector, LookupResult } from './types'
+import type { BookLookupConnector, LookupResult, TextQuery } from './types'
 import { extractYear, fetchJson } from './http'
 
 interface OpenLibraryBook {
@@ -10,64 +9,64 @@ interface OpenLibraryBook {
   cover?: { small?: string; medium?: string; large?: string }
 }
 
-/**
- * Primary source: Open Library. Keyless, broad coverage.
- *
- * Strategy:
- * 1. Query by ISBN-13 (EAN-13)
- * 2. If no hit, convert to ISBN-10 and retry (Turkish/older editions)
- * 3. Cover: prefer API cover URLs, fallback to OL cover endpoint, null if
- *    all fail (never return a broken link)
- */
+interface OpenLibraryDoc {
+  title?: string
+  author_name?: string[]
+  publisher?: string[]
+  first_publish_year?: number
+  isbn?: string[]
+  cover_i?: number
+}
+
+/** Open Library. Keyless, broad coverage. tier: fast. Supports ISBN + text. */
 export class OpenLibraryConnector implements BookLookupConnector {
   readonly name = 'openlibrary'
+  readonly tier = 'fast' as const
 
-  async lookup(ean13: string): Promise<LookupResult | null> {
-    // Attempt 1: ISBN-13
-    const result = await this.queryByIsbn(ean13)
-    if (result) return result
-
-    // Attempt 2: ISBN-10 fallback (978-prefix EAN-13 only)
-    const isbn10 = toIsbn10(ean13)
-    if (isbn10) {
-      const fallback = await this.queryByIsbn(isbn10)
-      if (fallback) {
-        // Preserve the canonical EAN-13 we were asked to look up
-        return { ...fallback, isbn: ean13 }
-      }
+  async lookupByIsbn(ean13: string): Promise<LookupResult[]> {
+    const url = `https://openlibrary.org/api/books?bibkeys=ISBN:${ean13}&jscmd=data&format=json`
+    const res = await fetchJson(url)
+    if (res.status === 'rateLimited' || res.status === 'error') {
+      throw new Error(`[${this.name}] transient (${res.status})`)
     }
-
-    return null
-  }
-
-  private async queryByIsbn(isbn: string): Promise<LookupResult | null> {
-    const url = `https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&jscmd=data&format=json`
-    const json = (await fetchJson(url)) as Record<string, OpenLibraryBook> | null
-    const data = json?.[`ISBN:${isbn}`]
-    if (!data) return null
-
-    return {
-      isbn,
+    if (res.status !== 'ok') return []
+    const json = res.data as Record<string, OpenLibraryBook>
+    const data = json?.[`ISBN:${ean13}`]
+    if (!data) return []
+    return [{
+      isbn: ean13,
       title: data.title || 'Untitled',
       author: (data.authors ?? []).map((a) => a.name).join(', ') || null,
       publisher: (data.publishers ?? []).map((p) => p.name).join(', ') || null,
       publishedYear: extractYear(data.publish_date),
-      coverUrl: this.resolveCover(isbn, data.cover),
+      coverUrl: this.resolveCover(ean13, data.cover),
       source: this.name,
-    }
+    }]
   }
 
-  private resolveCover(
-    isbn: string,
-    cover?: { small?: string; medium?: string; large?: string },
-  ): string | null {
-    // Prefer API-provided cover URLs (most reliable)
+  async searchByText(query: TextQuery): Promise<LookupResult[]> {
+    const params = new URLSearchParams({ q: query.raw, limit: '10' })
+    const res = await fetchJson(`https://openlibrary.org/search.json?${params}`)
+    if (res.status === 'rateLimited' || res.status === 'error') {
+      throw new Error(`[${this.name}] transient (${res.status})`)
+    }
+    if (res.status !== 'ok') return []
+    const docs = ((res.data as { docs?: OpenLibraryDoc[] }).docs ?? []).slice(0, 10)
+    return docs.map((d) => ({
+      isbn: d.isbn?.[0] ?? '',
+      title: d.title || 'Untitled',
+      author: (d.author_name ?? []).join(', ') || null,
+      publisher: (d.publisher ?? [])[0] ?? null,
+      publishedYear: d.first_publish_year ?? null,
+      coverUrl: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-L.jpg` : null,
+      source: this.name,
+    }))
+  }
+
+  private resolveCover(isbn: string, cover?: { small?: string; medium?: string; large?: string }): string | null {
     if (cover?.large) return cover.large
     if (cover?.medium) return cover.medium
     if (cover?.small) return cover.small
-
-    // Open Library cover endpoint — may or may not have an image
-    // Return it as a best-effort; caller should handle 404 gracefully
     return `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`
   }
 }

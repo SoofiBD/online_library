@@ -109,3 +109,19 @@ model SyncEvent {
   @@index([ownerId, createdAt])
   @@index([ownerId, entityType, entityId])
 }
+
+// --- Phase 3: Book-lookup aggregator cache ---
+
+// Stores positive and negative results from external book-lookup connectors.
+// key is "isbn:<ean13>" or "text:<normalized-query>".
+// hit=false means a negative cache entry (no results found).
+model LookupCache {
+  key       String   @id            // "isbn:<ean13>" | "text:<normalized-query>"
+  kind      String                  // "isbn" | "text"
+  payload   String                  // JSON-encoded LookupResult | LookupResult[]
+  hit       Boolean                 // false = negative (miss) cache
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@index([expiresAt])
+}
