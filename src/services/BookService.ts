@@ -8,7 +8,7 @@ import type {
   BookWithReview,
 } from '@/adapters/repository/BookRepository'
 import type { StorageAdapter } from '@/adapters/storage/StorageAdapter'
-import type { BookLookupService, LookupResult } from '@/services/lookup'
+import type { SearchAggregator, LookupResult } from '@/services/lookup'
 import { toEan13 } from '@/lib/isbn'
 import { createBookSchema } from '@/lib/schemas'
 
@@ -29,7 +29,7 @@ export class BookService {
     private readonly auth: AuthProvider,
     private readonly repo: BookRepository,
     private readonly storage: StorageAdapter,
-    private readonly lookupService: BookLookupService | null = null,
+    private readonly lookupService: SearchAggregator | null = null,
   ) {}
 
   async list(filter?: BookFilter): Promise<BookWithReview[]> {
@@ -66,7 +66,13 @@ export class BookService {
   /** Resolves book metadata by ISBN through the connector chain (Module 3). */
   async lookup(isbn: string): Promise<LookupResult | null> {
     if (!this.lookupService) return null
-    return this.lookupService.lookup(isbn)
+    return this.lookupService.byIsbn(isbn)
+  }
+
+  /** Free-text title/author search returning ranked candidates (Module 3). */
+  async search(query: string): Promise<LookupResult[]> {
+    if (!this.lookupService) return []
+    return this.lookupService.search(query)
   }
 
   /**
@@ -95,7 +101,7 @@ export class BookService {
       coverPath = coverPath ?? existing.coverPath
       status = existing.status
     } else if (!title && ean13 && this.lookupService) {
-      const found = await this.lookupService.lookup(ean13)
+      const found = await this.lookupService.byIsbn(ean13)
       if (found) {
         title = found.title
         author = author ?? found.author

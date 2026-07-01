@@ -67,7 +67,7 @@ export function toIsbn10(ean13: string): string | null {
   // Drop the 978 prefix, take first 9 digits, compute ISBN-10 check digit.
   const body = ean13.slice(3, 12) // 9 digits
   let sum = 0
-  for (let i = 0; i < 9; i++) sum += Number(body[i]) * (9 - i)
+  for (let i = 0; i < 9; i++) sum += Number(body[i]) * (10 - i)
   const remainder = sum % 11
   const check = remainder === 0 ? '0' : remainder === 1 ? 'X' : String(11 - remainder)
   return body + check

@@ -3,31 +3,29 @@ import { extractYear, fetchJson } from './http'
 
 interface IsbndbResponse {
   book?: {
-    title?: string
-    title_long?: string
-    authors?: string[]
-    publisher?: string
-    date_published?: string
-    image?: string
+    title?: string; title_long?: string; authors?: string[]
+    publisher?: string; date_published?: string; image?: string
   }
 }
 
-// Optional third source: ISBNDB. Unlike Open Library and Google Books it
-// REQUIRES an API key (sent in the Authorization header), so it is only added
-// to the chain when ISBNDB_API_KEY is set — see createBookLookupService().
+/** ISBNDB. Requires an API key; added to the chain only when configured. tier: fast. */
 export class IsbndbConnector implements BookLookupConnector {
   readonly name = 'isbndb'
+  readonly tier = 'fast' as const
 
   constructor(private readonly apiKey: string) {}
 
-  async lookup(ean13: string): Promise<LookupResult | null> {
-    const json = (await fetchJson(`https://api2.isbndb.com/book/${ean13}`, {
+  async lookupByIsbn(ean13: string): Promise<LookupResult[]> {
+    const res = await fetchJson(`https://api2.isbndb.com/book/${ean13}`, {
       headers: { Authorization: this.apiKey },
-    })) as IsbndbResponse | null
-    const book = json?.book
-    if (!book) return null
-
-    return {
+    })
+    if (res.status === 'rateLimited' || res.status === 'error') {
+      throw new Error(`[${this.name}] transient (${res.status})`)
+    }
+    if (res.status !== 'ok') return []
+    const book = (res.data as IsbndbResponse).book
+    if (!book) return []
+    return [{
       isbn: ean13,
       title: book.title || book.title_long || 'Untitled',
       author: (book.authors ?? []).join(', ') || null,
@@ -35,6 +33,6 @@ export class IsbndbConnector implements BookLookupConnector {
       publishedYear: extractYear(book.date_published),
       coverUrl: book.image || null,
       source: this.name,
-    }
+    }]
   }
 }
