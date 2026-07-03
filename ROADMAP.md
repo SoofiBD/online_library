@@ -41,13 +41,43 @@ Superseded the original Auth.js/Postgres/S3 plan below with a leaner one, since 
 - [ ] CORS: wildcard `*` → `ALLOWED_ORIGINS` allow-list
 - [ ] Remove `LocalOwnerProvider` + transitional `AUTH_MODE` flag once cut over
 - [ ] Dockerfile + docker-compose + Caddy (VPS deploy, not serverless — SQLite file + `public/uploads/` stay as-is via named volumes)
-- [ ] Deploy to VPS, DNS + TLS, prod smoke test from outside LAN
+- [ ] Deploy to VPS, DNS + TLS
+- [ ] **Cross-network reachability test**: open the deployed URL from outside the home LAN (mobile data, different Wi-Fi) — this is the actual point of the VPS+Caddy move, since LAN-only access (`-H 0.0.0.0` + local IP) cannot cross networks. TLS must show no warnings; two separate real accounts must be able to sign up and use the app concurrently without seeing each other's books.
 
-**Note**: No Postgres migration, no S3/R2, no Auth.js/Lucia, no `Share` table — none needed for "real accounts, public reachability." Sharing between users is deferred to a later phase if wanted.
+**Note**: No Postgres migration, no S3/R2, no Auth.js/Lucia, no `Share` table — none needed for "real accounts, public reachability." Sharing between users is deferred to Phase 3.
 
 ---
 
-## Phase 3 — AI Recommendations & Automation
+## Phase 3 — Sharing & Social
+
+**Goal**: Let users share books/lists with each other; light social layer on top of private-by-default libraries.
+
+- [ ] `Share` table (`bookId`, `sharedWithUserId`, `permission: READ | EDIT`) — or share a whole list/tag rather than one book at a time
+- [ ] Sharing UI: "share this book" action, incoming-shares view, revoke access
+- [ ] Public profile page (optional, opt-in): `/u/<username>` showing a curated public shelf
+- [ ] Activity feed (optional): "X finished reading Y", follow another user's public shelf
+- [ ] Reuse the existing `PairingCode`-style one-time-code pattern for share invites (generate code → recipient claims it) instead of inventing a new invite mechanism
+- [ ] Rate-limit sharing endpoints (abuse vector once the app is public)
+
+**Note**: Keep this behind Phase 2 — sharing requires real, stable multi-tenant auth first (which Phase 2 delivers). Building `Share` before auth was solid would've meant redoing it.
+
+---
+
+## Phase 4 — Website & Mobile Clients
+
+**Goal**: Grow beyond the single Next.js app — a marketing/public site, and a native mobile app, both built on top of the same backend instead of forking logic.
+
+- [ ] Treat `src/app/api/**` as a real public API surface: version it (`/api/v1/...`), document it (OpenAPI/Swagger spec generated from the Zod schemas already in use), add per-route rate limiting
+- [ ] Mobile app: reuse the existing `DeviceAuthProvider` + pairing-code flow as the mobile login path (it's already device-identity-based, which is exactly what a mobile client needs) — build with Expo/React Native, or Flutter if native performance matters more than code-sharing with the web app
+- [ ] Marketing/landing site: can be a separate lightweight static site (Astro/plain HTML) pointing users to sign up on the main app, rather than merging into the Next.js app's route tree — keeps the app's auth/session logic from leaking into public marketing pages
+- [ ] If the mobile app needs offline-first behavior, the existing `SyncEvent` append-log (built for multi-device sync in Phase 1) is already the right primitive — extend it rather than building a separate offline store
+- [ ] Push notifications (new book added to a shared list, share invite received) — new `NotificationProvider` adapter, swappable (APNs/FCM/web push)
+
+**Note**: Don't start this phase by rewriting the backend "to be API-first" — it already is (Next.js API routes + adapter layer). The work here is mostly new clients and a bit of API hardening (versioning, rate limits), not backend redesign.
+
+---
+
+## Phase 5 — AI Recommendations & Automation
 
 **Goal**: Personalized recommendations based on the existing library.
 
@@ -71,7 +101,9 @@ Superseded the original Auth.js/Postgres/S3 plan below with a leaner one, since 
 1. **Schema + adapter interfaces first** — if set up wrong, every phase suffers
 2. **Then a working vertical slice** (add → list → show) — early feedback
 3. Polish and phone access
-4. Phase 2/3 only after Phase 1 has settled into daily use
+4. Public multi-user (Phase 2) only after Phase 1 settled into daily use
+5. Sharing (Phase 3) only after real multi-user auth is solid — don't build `Share` on top of the old hardcoded-owner model
+6. Website/mobile clients (Phase 4) and AI recommendations (Phase 5) are independent of each other — order between them is whichever the user wants next, not a hard dependency
 
 ## Suggested First Step
 
