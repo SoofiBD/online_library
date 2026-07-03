@@ -1,6 +1,7 @@
 import "dotenv/config"
 import { PrismaClient } from '../src/generated/prisma/client'
 import { PrismaLibSql } from '@prisma/adapter-libsql'
+import { hashPassword } from '../src/lib/auth/password'
 
 const url = process.env.DATABASE_URL
 if (!url) throw new Error('DATABASE_URL is not set')
@@ -8,7 +9,8 @@ if (!url) throw new Error('DATABASE_URL is not set')
 const adapter = new PrismaLibSql({ url })
 const prisma = new PrismaClient({ adapter })
 
-const OWNER = 'local-owner'
+const SEED_EMAIL = process.env.SEED_OWNER_EMAIL ?? 'demo@example.com'
+const SEED_PASSWORD = process.env.SEED_OWNER_PASSWORD ?? 'demo-password'
 
 type Seed = {
   title: string
@@ -33,41 +35,41 @@ const BOOKS: Seed[] = [
 ]
 
 async function main() {
-  await prisma.user.upsert({
-    where: { id: OWNER },
+  const owner = await prisma.user.upsert({
+    where: { email: SEED_EMAIL },
     update: {},
-    create: { id: OWNER, name: 'Local User' },
+    create: { email: SEED_EMAIL, passwordHash: hashPassword(SEED_PASSWORD), name: 'Demo User' },
   })
 
-  const existing = await prisma.book.count({ where: { ownerId: OWNER } })
+  const existing = await prisma.book.count({ where: { ownerId: owner.id } })
   if (existing > 0) {
-    console.log(`Seed complete: local-owner exists, ${existing} books already present (skipped demo books).`)
+    console.log(`Seed complete: ${SEED_EMAIL} exists, ${existing} books already present (skipped demo books).`)
     return
   }
 
   for (const b of BOOKS) {
     await prisma.book.create({
       data: {
-        ownerId: OWNER,
+        ownerId: owner.id,
         title: b.title,
         author: b.author,
         coverColor: b.coverColor,
         status: b.status,
         tags: {
           connectOrCreate: b.tags.map((name) => ({
-            where: { ownerId_name: { ownerId: OWNER, name } },
-            create: { ownerId: OWNER, name },
+            where: { ownerId_name: { ownerId: owner.id, name } },
+            create: { ownerId: owner.id, name },
           })),
         },
         reviews:
           b.rating != null || b.notes != null || b.progress != null
-            ? { create: { userId: OWNER, rating: b.rating, notes: b.notes, progress: b.progress } }
+            ? { create: { userId: owner.id, rating: b.rating, notes: b.notes, progress: b.progress } }
             : undefined,
       },
     })
   }
 
-  console.log(`Seed complete: local-owner created with ${BOOKS.length} demo books.`)
+  console.log(`Seed complete: ${SEED_EMAIL} created with ${BOOKS.length} demo books.`)
 }
 
 main()

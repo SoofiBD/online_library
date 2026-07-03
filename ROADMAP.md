@@ -8,36 +8,42 @@ Each phase leaves behind a **standalone, usable** product. The next phase does n
 
 **Goal**: Add, view, and edit your own library; reach it from your phone.
 
-- [ ] Project skeleton: Next.js + TypeScript + Tailwind
-- [ ] Prisma schema (User, Book, Tag) + migration + seed (`local-owner`)
-- [ ] Adapter interfaces: `BookRepository`, `StorageAdapter`, `AuthProvider`
-- [ ] Implementations: `PrismaBookRepository`, `LocalStorageAdapter`, `LocalOwnerProvider`
-- [ ] `BookService` (business logic)
-- [ ] API: list / get / create / update / delete
-- [ ] UI: book list (grid + search/filter), detail, add/edit form
-- [ ] Photo upload + resize/compress + EXIF rotation fix
-- [ ] Mobile-first responsive layout
-- [ ] `.env.example`, README, `npm run db:setup`
-- [ ] Same-network phone access (`-H 0.0.0.0` + IP)
+- [x] Project skeleton: Next.js + TypeScript + Tailwind
+- [x] Prisma schema (User, Book, Tag) + migration + seed (`local-owner`)
+- [x] Adapter interfaces: `BookRepository`, `StorageAdapter`, `AuthProvider`
+- [x] Implementations: `PrismaBookRepository`, `LocalStorageAdapter`, `LocalOwnerProvider`
+- [x] `BookService` (business logic)
+- [x] API: list / get / create / update / delete
+- [x] UI: book list (grid + search/filter), detail, add/edit form
+- [x] Photo upload + resize/compress + EXIF rotation fix
+- [x] Mobile-first responsive layout
+- [x] `.env.example`, README, `npm run db:setup`
+- [x] Same-network phone access (`-H 0.0.0.0` + IP), device pairing + sync (Device/SyncEvent tables)
 
-**Output**: A single-user, local, fully functional library.
+**Output**: A single-user, LAN-reachable, fully functional library. Done.
 
 ---
 
-## Phase 2 — Multi-user & Sharing
+## Phase 2 — Public multi-user service (in progress)
 
-**Goal**: Multiple people, each with their own library; share selected books.
+**Goal**: Real accounts, reachable from any network (not just LAN), still single-owner-per-book (no sharing yet — see revised plan).
 
-- [ ] `AuthProvider` swap → `SessionAuthProvider` (Auth.js or Lucia)
-- [ ] Login/register; `ownerId` is now a real `userId`
-- [ ] `Share` table (bookId, sharedWithUserId, permission: READ/EDIT)
-- [ ] Sharing UI: "share this book/list", view of incoming shares
-- [ ] SQLite → Postgres (for concurrent writes) + data-move script
-- [ ] `StorageAdapter` swap option → S3/R2 (if deploying)
-- [ ] HTTPS + security hardening (rate limit, input sanitization)
-- [ ] Docker Compose (app + Postgres) — the "anyone can install it" goal
+Superseded the original Auth.js/Postgres/S3 plan below with a leaner one, since the existing adapter layer + SQLite/libSQL already support this without a data-layer rewrite. Full detail: `~/.claude/plans/bu-projeyi-nas-l-farkl-dazzling-frost.md`.
 
-**Note**: Since Phase 1 queries are already filtered by `ownerId`, most of the work is auth + the Share table; touching the data layer is minimal.
+- [x] `User.email` required + `passwordHash`, new `PairingCode` table (migration `20260703104041_add_auth`)
+- [x] Backfill script for existing `local-owner` row (`scripts/backfill-auth.ts`)
+- [x] `src/lib/auth/password.ts` — hash/verify (Node `scrypt`, not bcryptjs: npm registry unreachable in dev sandbox)
+- [x] `prisma/seed.ts` no longer hardcodes owner id
+- [ ] `SessionAuthProvider` (httpOnly cookie, `jose` JWT) + `/api/auth/{signup,login,logout}` + `/login`, `/signup` pages
+- [ ] `container.ts`: `createBookService(auth)` — drop hardwired `LocalOwnerProvider`; callers pick `DeviceAuthProvider` (has `x-device-id`) or `SessionAuthProvider`
+- [ ] `middleware.ts` — protect all routes except `/login`, `/signup`, `/api/auth/*`, device-authed APIs
+- [ ] Pairing moved to `PairingCode` table (was in-memory `Map`, lost on restart); `ownerId` from session, not hardcoded
+- [ ] CORS: wildcard `*` → `ALLOWED_ORIGINS` allow-list
+- [ ] Remove `LocalOwnerProvider` + transitional `AUTH_MODE` flag once cut over
+- [ ] Dockerfile + docker-compose + Caddy (VPS deploy, not serverless — SQLite file + `public/uploads/` stay as-is via named volumes)
+- [ ] Deploy to VPS, DNS + TLS, prod smoke test from outside LAN
+
+**Note**: No Postgres migration, no S3/R2, no Auth.js/Lucia, no `Share` table — none needed for "real accounts, public reachability." Sharing between users is deferred to a later phase if wanted.
 
 ---
 
