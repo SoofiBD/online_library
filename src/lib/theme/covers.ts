@@ -1,4 +1,4 @@
-import type { BookStatus } from '@/generated/prisma/client'
+import type { BookStatus, BookLocation } from '@/generated/prisma/client'
 
 export const COVERS = {
   oxblood:  { bg: 'linear-gradient(160deg,#7a2630,#591820 60%,#451218)', spine: '#3a0f15', foil: '#e7c982' },
@@ -40,4 +40,13 @@ export const STATUS_ORDER: BookStatus[] = ['WANT_TO_READ', 'READING', 'READ']
 
 export function nextStatus(status: BookStatus): BookStatus {
   return STATUS_ORDER[(STATUS_ORDER.indexOf(status) + 1) % STATUS_ORDER.length]
+}
+
+export const LOCATION: Record<BookLocation, { label: string; color: string; soft: string }> = {
+  ONLINE:   { label: 'Online', color: '#345b86', soft: '#e6edf5' },
+  PHYSICAL: { label: 'Physical', color: '#6f5a3a', soft: '#f2ead9' },
+}
+
+export function locationOf(location: BookLocation) {
+  return LOCATION[location] ?? LOCATION.PHYSICAL
 }

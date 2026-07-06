@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation'
 import { createBookSchema, updateBookSchema } from '@/lib/schemas'
 import { createBookService } from '@/lib/container'
 import { progressForStatus, nextStatus } from '@/lib/theme/covers'
-import type { BookStatus } from '@/generated/prisma/client'
+import type { BookStatus, BookLocation } from '@/generated/prisma/client'
 
 export type FormState = { errors?: Record<string, string[]> } | undefined
 
@@ -15,6 +15,7 @@ function extractFormData(formData: FormData) {
     return val && val.trim() ? val.trim() : null
   }
   const status = ((formData.get('status') as string) || 'WANT_TO_READ') as BookStatus
+  const location = ((formData.get('location') as string) || 'PHYSICAL') as BookLocation
   const tagsRaw = (formData.get('tags') as string) || ''
   const tags = tagsRaw.split(',').map((t) => t.trim()).filter(Boolean)
   return {
@@ -25,6 +26,7 @@ function extractFormData(formData: FormData) {
     notes: str('notes'),
     rating: formData.get('rating') || null,
     status,
+    location,
     tags,
     // Progress is derived from status (the comp has no manual progress input).
     progress: progressForStatus(status),

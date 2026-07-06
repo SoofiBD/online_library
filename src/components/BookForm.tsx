@@ -4,12 +4,13 @@ import { useActionState, useState, useRef } from 'react'
 import BookCover3D from './BookCover3D'
 import StarRating from './StarRating'
 import TagInput from './TagInput'
-import { COVER_KEYS, COVERS, STATUS } from '@/lib/theme/covers'
+import { COVER_KEYS, COVERS, STATUS, LOCATION } from '@/lib/theme/covers'
 import type { BookWithReview } from '@/adapters/repository/BookRepository'
 import type { FormState } from '@/actions/books'
-import type { BookStatus } from '@/generated/prisma/client'
+import type { BookStatus, BookLocation } from '@/generated/prisma/client'
 
 const STATUS_OPTIONS = Object.keys(STATUS) as BookStatus[]
+const LOCATION_OPTIONS = Object.keys(LOCATION) as BookLocation[]
 
 interface Props {
   action: (prevState: FormState, formData: FormData) => Promise<FormState>
@@ -26,6 +27,7 @@ export default function BookForm({ action, book, initialTitle, initialAuthor, in
   const [author, setAuthor] = useState(book?.author ?? initialAuthor ?? '')
   const [color, setColor] = useState<string>(book?.coverColor ?? 'garnet')
   const [status, setStatus] = useState<BookStatus>(book?.status ?? 'WANT_TO_READ')
+  const [location, setLocation] = useState<BookLocation>(book?.location ?? 'PHYSICAL')
   const [coverPath, setCoverPath] = useState<string>(book?.coverPath ?? initialCoverUrl ?? '')
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
@@ -57,6 +59,7 @@ export default function BookForm({ action, book, initialTitle, initialAuthor, in
     <form action={formAction} className="flex gap-[clamp(26px,5vw,48px)] flex-wrap items-start">
       <input type="hidden" name="coverColor" value={color} />
       <input type="hidden" name="status" value={status} />
+      <input type="hidden" name="location" value={location} />
       <input type="hidden" name="coverPath" value={coverPath} />
 
       {/* live preview + palette */}
@@ -112,6 +115,27 @@ export default function BookForm({ action, book, initialTitle, initialAuthor, in
                   key={s}
                   type="button"
                   onClick={() => setStatus(s)}
+                  className="cursor-pointer text-[13.5px] font-semibold px-4 py-[9px] rounded-[10px] transition-transform active:scale-95 border"
+                  style={active ? { background: m.soft, color: m.color, borderColor: m.color } : { background: 'transparent', color: '#6f6253', borderColor: '#ddccb0' }}
+                >
+                  {m.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        <div>
+          <span className={label}>LOCATION</span>
+          <div className="flex gap-2 flex-wrap">
+            {LOCATION_OPTIONS.map((l) => {
+              const m = LOCATION[l]
+              const active = location === l
+              return (
+                <button
+                  key={l}
+                  type="button"
+                  onClick={() => setLocation(l)}
                   className="cursor-pointer text-[13.5px] font-semibold px-4 py-[9px] rounded-[10px] transition-transform active:scale-95 border"
                   style={active ? { background: m.soft, color: m.color, borderColor: m.color } : { background: 'transparent', color: '#6f6253', borderColor: '#ddccb0' }}
                 >

@@ -34,6 +34,7 @@ function flatten(row: BookRow): BookWithReview {
     coverPath: row.coverPath,
     coverColor: row.coverColor,
     status: row.status,
+    location: row.location,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     rating: review?.rating ?? null,
