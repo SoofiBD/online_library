@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 export const bookStatusSchema = z.enum(['WANT_TO_READ', 'READING', 'READ'])
+export const bookLocationSchema = z.enum(['ONLINE', 'PHYSICAL'])
 
 // rating/notes now live on the Review model, but they are still collected on the
 // same form as the book itself, so they remain part of the book input and are
@@ -20,6 +21,7 @@ export const createBookSchema = z.object({
   progress: progressSchema,
   tags: tagsSchema,
   status: bookStatusSchema.default('WANT_TO_READ'),
+  location: bookLocationSchema.default('PHYSICAL'),
 })
 
 export const updateBookSchema = z.object({
@@ -33,6 +35,7 @@ export const updateBookSchema = z.object({
   progress: progressSchema,
   tags: tagsSchema,
   status: bookStatusSchema.optional(),
+  location: bookLocationSchema.optional(),
 })
 
 // Payload POSTed by the standalone barcode scanner (Module 2 bridge). Field

@@ -32,6 +32,7 @@ model Book {
   coverPath String?
   coverColor String?
   status    BookStatus @default(WANT_TO_READ)
+  location  BookLocation @default(PHYSICAL)
   tags      Tag[]      @relation("BookTags")
   reviews   Review[]
   createdAt DateTime   @default(now())
@@ -48,6 +49,11 @@ enum BookStatus {
   WANT_TO_READ
   READING
   READ
+}
+
+enum BookLocation {
+  ONLINE
+  PHYSICAL
 }
 
 // A user's personal relationship with a book: their star rating (1-5, validated

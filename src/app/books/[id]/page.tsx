@@ -7,7 +7,7 @@ import StatusCycleButton from '@/components/StatusCycleButton'
 import BookCover3D from '@/components/BookCover3D'
 import StarFraction from '@/components/StarFraction'
 import FadeIn from '@/components/FadeIn'
-import { statusOf } from '@/lib/theme/covers'
+import { statusOf, locationOf } from '@/lib/theme/covers'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -20,6 +20,7 @@ export default async function BookDetailPage({ params }: Props) {
   if (!book) notFound()
 
   const st = statusOf(book.status)
+  const loc = locationOf(book.location)
   const boundDelete = deleteBook.bind(null, id)
 
   return (
@@ -50,8 +51,11 @@ export default async function BookDetailPage({ params }: Props) {
               <h1 className="font-serif-display font-semibold text-[clamp(28px,5vw,40px)] leading-[1.1] tracking-[-.5px] mb-2">{book.title}</h1>
               <p className="font-serif-display italic text-[18px] text-[color:var(--color-muted)] mb-4">by {book.author ?? 'Unknown'}</p>
 
-              <div className="mb-[18px]">
+              <div className="mb-[18px] flex items-center gap-3">
                 <StarFraction rating={book.rating} size={19} />
+                <span className="text-[11px] font-bold tracking-[.5px] uppercase" style={{ color: loc.color }}>
+                  {loc.label}
+                </span>
               </div>
 
               {book.tags.length > 0 && (

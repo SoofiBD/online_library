@@ -1,11 +1,12 @@
 import Link from 'next/link'
 import BookCover3D from './BookCover3D'
 import StarFraction from './StarFraction'
-import { statusOf } from '@/lib/theme/covers'
+import { statusOf, locationOf } from '@/lib/theme/covers'
 import type { BookWithReview } from '@/adapters/repository/BookRepository'
 
 export default function BookCard({ book }: { book: BookWithReview }) {
   const st = statusOf(book.status)
+  const loc = locationOf(book.location)
   return (
     <Link
       href={`/books/${book.id}`}
@@ -26,6 +27,9 @@ export default function BookCard({ book }: { book: BookWithReview }) {
         <StarFraction rating={book.rating} size={12} />
         <span className="text-[10px] font-bold tracking-wider uppercase" style={{ color: st.color }}>
           {st.label}
+        </span>
+        <span className="text-[10px] font-bold tracking-wider uppercase" style={{ color: loc.color }}>
+          · {loc.label}
         </span>
       </div>
       {book.status === 'READING' && (

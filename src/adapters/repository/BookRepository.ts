@@ -1,4 +1,4 @@
-import type { Book, BookStatus } from '@/generated/prisma/client'
+import type { Book, BookStatus, BookLocation } from '@/generated/prisma/client'
 
 export interface BookFilter {
   q?: string
@@ -23,6 +23,7 @@ export interface BookCreateData {
   coverPath?: string | null
   coverColor?: string | null
   status?: BookStatus
+  location?: BookLocation
   // Routed into the user's Review inside the repository transaction:
   rating?: number | null
   notes?: string | null
@@ -37,6 +38,7 @@ export interface BookUpdateData {
   coverPath?: string | null
   coverColor?: string | null
   status?: BookStatus
+  location?: BookLocation
   rating?: number | null
   notes?: string | null
   progress?: number | null
