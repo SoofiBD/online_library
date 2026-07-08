@@ -8,17 +8,22 @@ import { corsJson, corsPreflight } from '@/lib/cors'
 export async function GET(request: NextRequest) {
   const isbn = request.nextUrl.searchParams.get('isbn')
   if (!isbn) {
-    return corsJson({ error: 'Missing ?isbn= query parameter' }, { status: 400 })
+    return corsJson(request, { error: 'Missing ?isbn= query parameter' }, { status: 400 })
   }
 
-  const service = createBookService()
-  const result = await service.lookup(isbn)
-  if (!result) {
-    return corsJson({ found: false }, { status: 404 })
+  try {
+    const service = createBookService()
+    const result = await service.lookup(isbn)
+    if (!result) {
+      return corsJson(request, { found: false }, { status: 404 })
+    }
+    return corsJson(request, { found: true, book: result })
+  } catch (error) {
+    console.error('[api/lookup] GET failed:', error)
+    return corsJson(request, { error: 'Lookup failed' }, { status: 500 })
   }
-  return corsJson({ found: true, book: result })
 }
 
-export function OPTIONS() {
-  return corsPreflight()
+export function OPTIONS(request: NextRequest) {
+  return corsPreflight(request)
 }

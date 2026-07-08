@@ -74,20 +74,23 @@ export class PrismaBookRepository implements BookRepository {
       where: {
         ownerId,
         ...(filter?.status ? { status: filter.status } : {}),
-        ...(filter?.q
-          ? {
-              OR: [
-                { title: { contains: filter.q } },
-                { author: { contains: filter.q } },
-                { tags: { some: { name: { contains: filter.q } } } },
-              ],
-            }
-          : {}),
       },
       include: reviewInclude(ownerId),
       orderBy: filter?.sort === 'title' ? { title: 'asc' } : { createdAt: 'desc' },
     })
-    const flat = rows.map(flatten)
+    let flat = rows.map(flatten)
+    // SQLite's default TEXT collation is BINARY (case-sensitive), so `contains`
+    // wouldn't match "Tolkien" against "tolkien". Filter case-insensitively in
+    // app code instead — library sizes here are small enough this is cheap.
+    if (filter?.q) {
+      const q = filter.q.toLowerCase()
+      flat = flat.filter(
+        (book) =>
+          book.title.toLowerCase().includes(q) ||
+          (book.author?.toLowerCase().includes(q) ?? false) ||
+          book.tags.some((tag) => tag.name.toLowerCase().includes(q)),
+      )
+    }
     // Rating lives on the joined review, so it can't drive a DB orderBy here;
     // sort in the app layer for the "highest rated" option.
     if (filter?.sort === 'rating') {
