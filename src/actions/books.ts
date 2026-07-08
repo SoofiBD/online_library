@@ -44,8 +44,14 @@ export async function createBook(
     return { errors: result.error.flatten().fieldErrors }
   }
 
-  const service = createBookService()
-  const book = await service.create(result.data)
+  let book
+  try {
+    const service = createBookService()
+    book = await service.create(result.data)
+  } catch (error) {
+    console.error('[actions/books] createBook failed:', error)
+    return { errors: { _form: ['Could not save the book. Please try again.'] } }
+  }
   revalidatePath('/')
   redirect(`/books/${book.id}`)
 }
@@ -62,8 +68,13 @@ export async function updateBook(
     return { errors: result.error.flatten().fieldErrors }
   }
 
-  const service = createBookService()
-  await service.update(id, result.data)
+  try {
+    const service = createBookService()
+    await service.update(id, result.data)
+  } catch (error) {
+    console.error('[actions/books] updateBook failed:', error)
+    return { errors: { _form: ['Could not save the book. Please try again.'] } }
+  }
   revalidatePath('/')
   revalidatePath(`/books/${id}`)
   redirect(`/books/${id}`)
@@ -74,7 +85,12 @@ export async function deleteBook(
   _formData: FormData,
 ): Promise<void> {
   const service = createBookService()
-  await service.delete(id)
+  try {
+    await service.delete(id)
+  } catch (error) {
+    console.error('[actions/books] deleteBook failed:', error)
+    throw error
+  }
   revalidatePath('/')
   redirect('/')
 }
@@ -83,7 +99,13 @@ export async function deleteBook(
 // re-derives its progress, driven by the status pill on the detail view.
 export async function cycleStatus(id: string): Promise<void> {
   const service = createBookService()
-  const book = await service.getById(id)
+  let book
+  try {
+    book = await service.getById(id)
+  } catch (error) {
+    console.error('[actions/books] cycleStatus failed:', error)
+    throw error
+  }
   if (!book) return
   const next = nextStatus(book.status)
   await service.update(id, {

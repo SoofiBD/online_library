@@ -8,13 +8,18 @@ import { corsJson, corsPreflight } from '@/lib/cors'
 export async function GET(request: NextRequest) {
   const q = request.nextUrl.searchParams.get('q')?.trim()
   if (!q) {
-    return corsJson({ error: 'Missing ?q= query parameter' }, { status: 400 })
+    return corsJson(request, { error: 'Missing ?q= query parameter' }, { status: 400 })
   }
-  const service = createBookService()
-  const results = await service.search(q)
-  return corsJson({ results })
+  try {
+    const service = createBookService()
+    const results = await service.search(q)
+    return corsJson(request, { results })
+  } catch (error) {
+    console.error('[api/search] GET failed:', error)
+    return corsJson(request, { error: 'Search failed' }, { status: 500 })
+  }
 }
 
-export function OPTIONS() {
-  return corsPreflight()
+export function OPTIONS(request: NextRequest) {
+  return corsPreflight(request)
 }

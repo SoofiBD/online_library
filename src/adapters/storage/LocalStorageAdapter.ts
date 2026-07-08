@@ -33,6 +33,10 @@ export class LocalStorageAdapter implements StorageAdapter {
       console.error('Attempted path traversal in delete:', coverPath)
       return
     }
-    await fs.unlink(fullPath).catch(() => {})
+    await fs.unlink(fullPath).catch((error: NodeJS.ErrnoException) => {
+      if (error.code !== 'ENOENT') {
+        console.error('[LocalStorageAdapter] failed to delete cover:', error)
+      }
+    })
   }
 }

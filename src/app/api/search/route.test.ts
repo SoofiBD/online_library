@@ -7,7 +7,7 @@ vi.mock('@/lib/container', () => ({
 import { GET } from './route'
 
 function req(url: string) {
-  return { nextUrl: new URL(url) } as never
+  return { nextUrl: new URL(url), headers: new Headers() } as never
 }
 
 describe('GET /api/search', () => {

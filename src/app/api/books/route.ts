@@ -3,28 +3,37 @@ import { revalidatePath } from 'next/cache'
 import { createBookService } from '@/lib/container'
 import { scanBookSchema } from '@/lib/schemas'
 import { BookValidationError } from '@/services/BookService'
-import { corsJson, corsPreflight } from '@/lib/cors'
+import { corsJson, corsPreflight, requireValidOrigin } from '@/lib/cors'
 
 // GET /api/books -> the current owner's library, as shared JSON. Lets the
 // standalone scanner render the same list the PC sees.
-export async function GET() {
-  const service = createBookService()
-  const books = await service.list()
-  return corsJson({ books })
+export async function GET(request: NextRequest) {
+  try {
+    const service = createBookService()
+    const books = await service.list()
+    return corsJson(request, { books })
+  } catch (error) {
+    console.error('[api/books] GET failed:', error)
+    return corsJson(request, { error: 'Could not load the library' }, { status: 500 })
+  }
 }
 
 // POST /api/books -> persist a scanned/manual book into the shared database.
 export async function POST(request: NextRequest) {
+  const originError = requireValidOrigin(request)
+  if (originError) return originError
+
   let payload: unknown
   try {
     payload = await request.json()
   } catch {
-    return corsJson({ error: 'Invalid JSON body' }, { status: 400 })
+    return corsJson(request, { error: 'Invalid JSON body' }, { status: 400 })
   }
 
   const parsed = scanBookSchema.safeParse(payload)
   if (!parsed.success) {
     return corsJson(
+      request,
       { error: 'Validation failed', issues: parsed.error.flatten() },
       { status: 400 },
     )
@@ -44,17 +53,17 @@ export async function POST(request: NextRequest) {
 
     // Mark the home library stale so the next visit on the PC shows the book.
     revalidatePath('/')
-    return corsJson({ book }, { status: 201 })
+    return corsJson(request, { book }, { status: 201 })
   } catch (error) {
     if (error instanceof BookValidationError) {
-      return corsJson({ error: error.message }, { status: 422 })
+      return corsJson(request, { error: error.message }, { status: 422 })
     }
     console.error('[api/books] POST failed:', error)
-    return corsJson({ error: 'Could not save the book' }, { status: 500 })
+    return corsJson(request, { error: 'Could not save the book' }, { status: 500 })
   }
 }
 
 // Preflight for cross-origin POSTs from the scanner.
-export function OPTIONS() {
-  return corsPreflight()
+export function OPTIONS(request: NextRequest) {
+  return corsPreflight(request)
 }

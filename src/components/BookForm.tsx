@@ -93,6 +93,9 @@ export default function BookForm({ action, book, initialTitle, initialAuthor, in
 
       {/* fields */}
       <div className="flex-1 min-w-[280px] flex flex-col gap-5">
+        {state?.errors?._form && (
+          <div className="text-[#a8432f] text-[13px] font-semibold">{state.errors._form[0]}</div>
+        )}
         <div>
           <label htmlFor="title" className={label}>TITLE</label>
           <input id="title" name="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="The book's title" className={field} />
