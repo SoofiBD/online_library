@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 
 vi.mock('@/lib/container', () => ({
   createBookService: () => ({ search: async (q: string) => (q === 'hit' ? [{ title: 'X' }] : []) }),
+  resolveAuthProvider: () => ({ getCurrentUserId: async () => 'user-1' }),
 }))
 
 import { GET } from './route'

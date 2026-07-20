@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server'
-import { createBookService } from '@/lib/container'
+import { createBookService, resolveAuthProvider } from '@/lib/container'
 import { corsJson, corsPreflight } from '@/lib/cors'
 
 // GET /api/lookup?isbn=... -> resolve metadata through the connector chain
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const service = createBookService()
+    const service = createBookService(resolveAuthProvider(request))
     const result = await service.lookup(isbn)
     if (!result) {
       return corsJson(request, { found: false }, { status: 404 })

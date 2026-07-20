@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server'
 import { prisma } from '@/lib/db'
 import { corsJson, corsPreflight, requireValidOrigin } from '@/lib/cors'
-import { claimPairingCode } from '../create/route'
+import { claimPairingCode } from '@/lib/auth/pairing'
 
 // POST /api/pair/claim — exchange a 6-digit code for a device binding
 //
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const result = claimPairingCode(String(code))
+    const result = await claimPairingCode(String(code))
     if (!result) {
       return corsJson(
         request,

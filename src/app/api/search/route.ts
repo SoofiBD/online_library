@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server'
-import { createBookService } from '@/lib/container'
+import { createBookService, resolveAuthProvider } from '@/lib/container'
 import { corsJson, corsPreflight } from '@/lib/cors'
 
 // GET /api/search?q=... -> ranked candidate list from the multi-source
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     return corsJson(request, { error: 'Missing ?q= query parameter' }, { status: 400 })
   }
   try {
-    const service = createBookService()
+    const service = createBookService(resolveAuthProvider(request))
     const results = await service.search(q)
     return corsJson(request, { results })
   } catch (error) {
