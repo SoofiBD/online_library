@@ -1,23 +1,31 @@
 // CORS for the LAN bridge (Module 2): the standalone scanner/phone client runs
 // on a different origin than Biblio's Next server, so /api/* must accept
-// cross-origin requests from that specific LAN origin — but only that origin,
-// not `*`. Allowed origins come from LAN_DEV_ORIGINS (bare hosts, same env var
-// next.config.ts uses for allowedDevOrigins) plus localhost for same-machine dev.
+// cross-origin requests from that specific origin — but only that origin, not
+// `*`. Two sources feed the allow-list: LAN_DEV_ORIGINS (bare hosts, same env
+// var next.config.ts uses for allowedDevOrigins — dev-only, LAN scanner) and
+// ALLOWED_ORIGINS (full origins incl. scheme — production, e.g. the deployed
+// scanner's real domain). Plus localhost for same-machine dev either way.
 const DEV_PORT = '3000'
 
 function bareHostsToOrigins(hosts: string[]): string[] {
   return hosts.flatMap((host) => [`http://${host}:${DEV_PORT}`, `https://${host}:${DEV_PORT}`])
 }
 
-const LAN_DEV_HOSTS = (process.env.LAN_DEV_ORIGINS ?? '')
-  .split(',')
-  .map((origin) => origin.trim())
-  .filter(Boolean)
+function splitEnvList(value: string | undefined): string[] {
+  return (value ?? '')
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+}
+
+const LAN_DEV_HOSTS = splitEnvList(process.env.LAN_DEV_ORIGINS)
+const PRODUCTION_ORIGINS = splitEnvList(process.env.ALLOWED_ORIGINS)
 
 const ALLOWED_ORIGINS = new Set<string>([
   `http://localhost:${DEV_PORT}`,
   `http://127.0.0.1:${DEV_PORT}`,
   ...bareHostsToOrigins(LAN_DEV_HOSTS),
+  ...PRODUCTION_ORIGINS,
 ])
 
 function isAllowedOrigin(origin: string | null): origin is string {

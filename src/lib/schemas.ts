@@ -64,8 +64,9 @@ export const scanBookSchema = z
 // already-cataloged book without touching the immutable catalog metadata.
 //
 // `userId` is intentionally absent: it is supplied server-side by the
-// LocalOwnerProvider, never trusted from the client (same pattern as `ownerId`
-// on the Book schemas). `bookId` identifies which catalog entry is being rated.
+// AuthProvider (session cookie or paired device), never trusted from the
+// client (same pattern as `ownerId` on the Book schemas). `bookId` identifies
+// which catalog entry is being rated.
 
 // On create, a rating is the whole point of the interaction, so it is required
 // and strictly bounded 1–5 (the DB column stays nullable for the book-form path).
@@ -93,8 +94,21 @@ export const updateReviewSchema = z.object({
   notes: z.string().trim().optional().nullable(),
 })
 
+export const signupSchema = z.object({
+  email: z.string().trim().toLowerCase().email('Enter a valid email'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  name: z.string().trim().min(1).optional().nullable(),
+})
+
+export const loginSchema = z.object({
+  email: z.string().trim().toLowerCase().email('Enter a valid email'),
+  password: z.string().min(1, 'Password is required'),
+})
+
 export type CreateBookInput = z.infer<typeof createBookSchema>
 export type UpdateBookInput = z.infer<typeof updateBookSchema>
 export type CreateReviewInput = z.infer<typeof createReviewSchema>
 export type UpdateReviewInput = z.infer<typeof updateReviewSchema>
 export type ScanBookInput = z.infer<typeof scanBookSchema>
+export type SignupInput = z.infer<typeof signupSchema>
+export type LoginInput = z.infer<typeof loginSchema>

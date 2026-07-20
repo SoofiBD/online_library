@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createBookSchema, updateBookSchema } from '@/lib/schemas'
 import { createBookService } from '@/lib/container'
+import { SessionAuthProvider } from '@/adapters/auth/SessionAuthProvider'
 import { progressForStatus, nextStatus } from '@/lib/theme/covers'
 import type { BookStatus, BookLocation } from '@/generated/prisma/client'
 
@@ -46,7 +47,7 @@ export async function createBook(
 
   let book
   try {
-    const service = createBookService()
+    const service = createBookService(new SessionAuthProvider())
     book = await service.create(result.data)
   } catch (error) {
     console.error('[actions/books] createBook failed:', error)
@@ -69,7 +70,7 @@ export async function updateBook(
   }
 
   try {
-    const service = createBookService()
+    const service = createBookService(new SessionAuthProvider())
     await service.update(id, result.data)
   } catch (error) {
     console.error('[actions/books] updateBook failed:', error)
@@ -84,7 +85,7 @@ export async function deleteBook(
   id: string,
   _formData: FormData,
 ): Promise<void> {
-  const service = createBookService()
+  const service = createBookService(new SessionAuthProvider())
   try {
     await service.delete(id)
   } catch (error) {
@@ -98,7 +99,7 @@ export async function deleteBook(
 // Advances a book's reading status (Want to Read → Reading → Read → …) and
 // re-derives its progress, driven by the status pill on the detail view.
 export async function cycleStatus(id: string): Promise<void> {
-  const service = createBookService()
+  const service = createBookService(new SessionAuthProvider())
   let book
   try {
     book = await service.getById(id)

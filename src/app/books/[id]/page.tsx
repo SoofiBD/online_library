@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createBookService } from '@/lib/container'
+import { SessionAuthProvider } from '@/adapters/auth/SessionAuthProvider'
 import { deleteBook } from '@/actions/books'
 import DeleteBookButton from '@/components/DeleteBookButton'
 import StatusCycleButton from '@/components/StatusCycleButton'
@@ -15,7 +16,7 @@ interface Props {
 
 export default async function BookDetailPage({ params }: Props) {
   const { id } = await params
-  const service = createBookService()
+  const service = createBookService(new SessionAuthProvider())
   const book = await service.getById(id)
   if (!book) notFound()
 

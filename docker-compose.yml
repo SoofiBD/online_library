@@ -1,0 +1,43 @@
+services:
+  app:
+    build:
+      context: .
+      target: runner
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./data:/app/data
+      - ./public/uploads:/app/public/uploads
+    expose:
+      - "3000"
+
+  # One-shot: run migrations (+ seed, first time only) against a fresh volume.
+  # `runner` has no Prisma CLI (kept out of the prod image on purpose), so
+  # this reuses the `builder` stage, which has the full toolchain.
+  #   docker compose run --rm migrate
+  migrate:
+    build:
+      context: .
+      target: builder
+    env_file: .env
+    volumes:
+      - ./data:/app/data
+    entrypoint: ["npx", "prisma", "migrate", "deploy"]
+    profiles: ["tools"]
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+
+volumes:
+  caddy_data:
+  caddy_config:

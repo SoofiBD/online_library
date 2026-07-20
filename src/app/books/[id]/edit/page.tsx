@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import BookForm from '@/components/BookForm'
 import { updateBook } from '@/actions/books'
 import { createBookService } from '@/lib/container'
+import { SessionAuthProvider } from '@/adapters/auth/SessionAuthProvider'
 import FadeIn from '@/components/FadeIn'
 
 interface Props {
@@ -11,7 +12,7 @@ interface Props {
 
 export default async function EditBookPage({ params }: Props) {
   const { id } = await params
-  const service = createBookService()
+  const service = createBookService(new SessionAuthProvider())
   const book = await service.getById(id)
   if (!book) notFound()
 

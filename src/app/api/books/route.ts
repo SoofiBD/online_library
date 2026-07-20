@@ -1,18 +1,20 @@
 import type { NextRequest } from 'next/server'
 import { revalidatePath } from 'next/cache'
-import { createBookService } from '@/lib/container'
+import { createBookService, resolveAuthProvider } from '@/lib/container'
 import { scanBookSchema } from '@/lib/schemas'
 import { BookValidationError } from '@/services/BookService'
 import { corsJson, corsPreflight, requireValidOrigin } from '@/lib/cors'
+import { isAuthError } from '@/lib/auth/isAuthError'
 
 // GET /api/books -> the current owner's library, as shared JSON. Lets the
 // standalone scanner render the same list the PC sees.
 export async function GET(request: NextRequest) {
   try {
-    const service = createBookService()
+    const service = createBookService(resolveAuthProvider(request))
     const books = await service.list()
     return corsJson(request, { books })
   } catch (error) {
+    if (isAuthError(error)) return corsJson(request, { error: error.message }, { status: 401 })
     console.error('[api/books] GET failed:', error)
     return corsJson(request, { error: 'Could not load the library' }, { status: 500 })
   }
@@ -41,7 +43,7 @@ export async function POST(request: NextRequest) {
 
   const { isbn, title, author, cover, rating, review } = parsed.data
   try {
-    const service = createBookService()
+    const service = createBookService(resolveAuthProvider(request))
     const book = await service.addByScan({
       isbn,
       title,
@@ -55,6 +57,7 @@ export async function POST(request: NextRequest) {
     revalidatePath('/')
     return corsJson(request, { book }, { status: 201 })
   } catch (error) {
+    if (isAuthError(error)) return corsJson(request, { error: error.message }, { status: 401 })
     if (error instanceof BookValidationError) {
       return corsJson(request, { error: error.message }, { status: 422 })
     }

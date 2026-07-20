@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { createBookService } from '@/lib/container'
+import { SessionAuthProvider } from '@/adapters/auth/SessionAuthProvider'
 import AnimatedBookList from '@/components/AnimatedBookList'
 import SearchFilter from '@/components/SearchFilter'
 import FadeIn from '@/components/FadeIn'
@@ -23,7 +24,7 @@ export default async function HomePage({ searchParams }: Props) {
     | 'title'
     | 'rating'
 
-  const service = createBookService()
+  const service = createBookService(new SessionAuthProvider())
   const [books, all] = await Promise.all([
     service.list({ q: params.q, status, sort }),
     service.list({}),

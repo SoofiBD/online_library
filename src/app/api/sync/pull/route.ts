@@ -16,8 +16,8 @@ export async function GET(request: NextRequest) {
       500,
     )
 
-    // Resolve owner from x-device-id header (falls back to local-owner when
-    // the header is absent; rejected when it names an unknown device).
+    // Resolve owner from x-device-id header; rejected when absent or when it
+    // names an unknown/unpaired device.
     const deviceId = request.headers.get('x-device-id')
     const ownerId = await resolveOwner(deviceId)
     if (ownerId === null) {
