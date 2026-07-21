@@ -2,6 +2,8 @@ import type { NextRequest } from 'next/server'
 import { prisma } from '@/lib/db'
 import { corsJson, corsPreflight, requireValidOrigin } from '@/lib/cors'
 import { claimPairingCode } from '@/lib/auth/pairing'
+import { clientIp, isRateLimited } from '@/lib/rateLimit'
+import { claimPairingCodeSchema } from '@/lib/schemas'
 
 // POST /api/pair/claim — exchange a 6-digit code for a device binding
 //
@@ -14,19 +16,27 @@ export async function POST(request: NextRequest) {
   const originError = requireValidOrigin(request)
   if (originError) return originError
 
+  // Tight per-IP throttle: the code is only a 6-digit/1M keyspace, so this is
+  // the main defense against brute-forcing it within its 5-minute expiry.
+  if (isRateLimited(`pair-claim:${clientIp(request)}`, 10, 60_000)) {
+    return corsJson(request, { error: 'Too many attempts, try again later' }, { status: 429 })
+  }
+
   try {
     const body = await request.json()
-    const { code, deviceId, name } = body ?? {}
+    const parsed = claimPairingCodeSchema.safeParse(body)
 
-    if (!code || !deviceId) {
+    if (!parsed.success) {
       return corsJson(
         request,
-        { error: 'Missing required fields: code, deviceId' },
+        { error: 'Validation failed', issues: parsed.error.flatten() },
         { status: 400 },
       )
     }
 
-    const result = await claimPairingCode(String(code))
+    const { code, deviceId, name } = parsed.data
+
+    const result = await claimPairingCode(code)
     if (!result) {
       return corsJson(
         request,
@@ -37,9 +47,9 @@ export async function POST(request: NextRequest) {
 
     // Upsert: a device may re-pair (e.g. after clearing localStorage)
     const device = await prisma.device.upsert({
-      where: { deviceId: String(deviceId) },
+      where: { deviceId },
       create: {
-        deviceId: String(deviceId),
+        deviceId,
         ownerId: result.ownerId,
         name: name ?? null,
       },

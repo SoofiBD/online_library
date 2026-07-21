@@ -105,6 +105,13 @@ export const loginSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 })
 
+export const claimPairingCodeSchema = z.object({
+  code: z.string().trim().regex(/^\d{6}$/, 'Code must be 6 digits'),
+  deviceId: z.string().trim().min(1, 'deviceId is required'),
+  name: z.string().trim().min(1).optional().nullable(),
+})
+
+export type ClaimPairingCodeInput = z.infer<typeof claimPairingCodeSchema>
 export type CreateBookInput = z.infer<typeof createBookSchema>
 export type UpdateBookInput = z.infer<typeof updateBookSchema>
 export type CreateReviewInput = z.infer<typeof createReviewSchema>

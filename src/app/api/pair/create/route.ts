@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { corsJson, corsPreflight, requireValidOrigin } from '@/lib/cors'
 import { generatePairingCode } from '@/lib/auth/pairing'
 import { getSessionUserId } from '@/lib/auth/session'
+import { clientIp, isRateLimited } from '@/lib/rateLimit'
 
 // POST /api/pair/create — generate a pairing code for the authenticated owner.
 // Codes live in the PairingCode table (survives process restarts) rather
@@ -9,6 +10,10 @@ import { getSessionUserId } from '@/lib/auth/session'
 export async function POST(request: NextRequest) {
   const originError = requireValidOrigin(request)
   if (originError) return originError
+
+  if (isRateLimited(`pair-create:${clientIp(request)}`, 10, 60_000)) {
+    return corsJson(request, { error: 'Too many attempts, try again later' }, { status: 429 })
+  }
 
   const ownerId = await getSessionUserId()
   if (!ownerId) {

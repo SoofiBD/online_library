@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { prisma } from '@/lib/db'
 import { corsJson, corsPreflight, requireValidOrigin } from '@/lib/cors'
 import { resolveOwner } from '@/lib/auth/resolveOwner'
+import { sweepSyncRetention } from '@/lib/syncRetention'
 
 // POST /api/sync/push
 //
@@ -30,6 +31,11 @@ export async function POST(request: NextRequest) {
     if (ownerId === null) {
       return corsJson(request, { error: 'Unknown or unpaired device' }, { status: 401 })
     }
+
+    // Piggyback the retention sweep on a push rather than a separate cron —
+    // keeps SyncEvent/Device bounded without new infra (same idea as the
+    // PairingCode sweep in pairing.ts).
+    await sweepSyncRetention(ownerId)
 
     const accepted: string[] = []
     const conflicts: Array<{ entityType: string; entityId: string; serverVersion: number }> = []

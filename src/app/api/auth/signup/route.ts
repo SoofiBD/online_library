@@ -4,9 +4,14 @@ import { prisma } from '@/lib/db'
 import { hashPassword } from '@/lib/auth/password'
 import { setSessionCookie } from '@/lib/auth/session'
 import { signupSchema } from '@/lib/schemas'
+import { clientIp, isRateLimited } from '@/lib/rateLimit'
 
 // POST /api/auth/signup -> create a new account and start a session.
 export async function POST(request: NextRequest) {
+  if (isRateLimited(`signup:${clientIp(request)}`, 5, 60_000)) {
+    return NextResponse.json({ error: 'Too many attempts, try again later' }, { status: 429 })
+  }
+
   let payload: unknown
   try {
     payload = await request.json()

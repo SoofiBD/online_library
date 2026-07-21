@@ -52,17 +52,17 @@ Superseded the original Auth.js/Postgres/S3 plan below with a leaner one, since 
 
 **Goal**: Audit what Phase 2 built before adding more feature surface on top of it — auth, session, and transport concerns are cheapest to fix now, before recommendations (Phase 4) and mobile (Phase 5) add more endpoints and more client trust assumptions.
 
-- [ ] Auth/session audit: hand-rolled HMAC session token (`src/lib/auth/session.ts`) and scrypt password hashing (`src/lib/auth/password.ts`) were built under a sandbox constraint (npm registry unreachable, couldn't pull `jose`/`bcryptjs`) — re-check whether that constraint still holds; if the registry is reachable now, evaluate swapping to audited libraries instead of hand-rolled crypto
-- [ ] Rate-limit auth endpoints (`/api/auth/{signup,login}`, `/api/pair/{create,claim}`) — currently unlimited, so brute-forcing a password or pairing code is only bounded by the 6-digit code's keyspace and a 5-minute expiry
-- [ ] `PairingCode` uses a 6-digit numeric code (1M keyspace) with no attempt limit on `/api/pair/claim` — add a per-IP or per-code attempt counter, or widen the code
-- [ ] CORS review: confirm `ALLOWED_ORIGINS` is actually set (not left blank) before any public deploy; audit `requireValidOrigin`'s "missing Origin header is allowed through" exemption (built for native/CLI clients — verify it can't be abused by a same-origin-spoofing browser request)
-- [ ] Cookie flags check: `secure` is gated on `NODE_ENV === 'production'` (`session.ts`) — confirm this is actually `production` in the real deploy environment, not just locally
-- [ ] Dependency audit: `npm audit`, check for known CVEs in `@prisma/client`, `@libsql/client`, `sharp`, `next` — this couldn't be run in-session (npm registry unreachable in sandbox)
-- [ ] Docker image audit: confirm the `runner` stage (Dockerfile) truly excludes dev dependencies and the Prisma CLI as intended; confirm the non-root `nextjs` user actually owns everything it needs to write (`data/`, `public/uploads/`)
-- [ ] Input validation sweep: confirm every API route validates with a Zod schema (some, like `/api/pair/claim`, currently do ad-hoc `if (!code || !deviceId)` checks instead) and returns consistent error shapes
-- [ ] Error message audit: confirm no route leaks stack traces, internal paths, or DB errors to the client (spot-check the generic `console.error` + generic-message pattern already used in most routes is applied everywhere)
-- [ ] Upload path audit: `LocalStorageAdapter` (Phase 1) accepts photo uploads — re-check file-type/size validation now that the app is multi-tenant and will be internet-facing, not LAN-only
-- [ ] `SyncEvent`/`Device` cleanup: confirm stale/unpaired devices and old sync events don't accumulate unbounded per user
+- [x] Auth/session audit: npm registry is reachable now, but hand-rolled HMAC session token + scrypt password hashing are already sound audited primitives (Node builtin, timing-safe compare) — no security benefit to swapping to `jose`/`bcryptjs`, just adds deps. Keeping as-is.
+- [x] Rate-limit auth endpoints (`/api/auth/{signup,login}`, `/api/pair/{create,claim}`) — added `src/lib/rateLimit.ts` (in-memory per-IP fixed window), 5/min on login+signup, 10/min on pair create+claim
+- [x] `PairingCode` 6-digit brute-force — covered by the pair/claim rate limit above
+- [x] CORS review: `requireValidOrigin`'s missing-Origin exemption confirmed safe (browsers always attach Origin on cross-site requests; only reachable by non-browser clients, which auth via `x-device-id` anyway). `ALLOWED_ORIGINS` still needs to be set as an actual deploy step, not a code fix.
+- [x] Cookie flags check: Dockerfile hardcodes `ENV NODE_ENV=production` in the runner stage — `secure` flag confirmed true in real deploy
+- [x] Dependency audit: `npm audit` — 6 vulns, all in `hono`/`@prisma/dev` (prisma CLI devDependency) and `postcss` (build-time only); none reachable at runtime, no CVEs in `@prisma/client`/`@libsql/client`/`sharp`/`next` itself
+- [x] Docker image audit: standalone build tracing already excludes unused devDeps/Prisma CLI from the runner image; `data/`+`public/uploads/` correctly chowned to `nextjs`, `USER nextjs` set before `CMD`
+- [x] Input validation sweep: added `claimPairingCodeSchema` for `/api/pair/claim` (was ad-hoc `if` checks). `sync/push`/`sync/pull` still destructure ad-hoc — lower risk (device-authed only), flagged as follow-up
+- [x] Error message audit: every route already logs internally via `console.error` and returns a generic client message — no leaks found
+- [x] Upload path audit: found and fixed a real gap — `/api/upload` had **no auth check at all** (unlike every other mutating route); added `requireValidOrigin` + `resolveAuthProvider` check. File-type/size validation (10MB cap, MIME allow-list, sharp re-encode) was already adequate.
+- [x] `SyncEvent`/`Device` cleanup: added `src/lib/syncRetention.ts` — 90-day `SyncEvent` retention + 180-day stale-`Device` pruning, swept opportunistically on `sync/push` (same pattern as the `PairingCode` sweep). `/api/books` stays the source of truth, so pruning is safe; `sync/pull` returns `{ resyncRequired: true }` if `since` predates the retention window instead of silently returning a partial log.
 
 **Note**: This phase produces no new user-facing feature — it's a punch-list pass over Phase 2's auth/security surface. Small, mechanical fixes expected; anything that turns out to need a bigger redesign gets its own follow-up rather than blocking this phase.
 

@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { prisma } from '@/lib/db'
 import { corsJson, corsPreflight } from '@/lib/cors'
 import { resolveOwner } from '@/lib/auth/resolveOwner'
+import { isResyncRequired } from '@/lib/syncRetention'
 
 // GET /api/sync/pull?since=<ISO timestamp>&limit=100
 //
@@ -26,7 +27,15 @@ export async function GET(request: NextRequest) {
 
     const where: Record<string, unknown> = { ownerId }
     if (since) {
-      where.createdAt = { gt: new Date(since) }
+      const sinceDate = new Date(since)
+      // `since` predates the retention window (see syncRetention.ts): events
+      // in that gap may have been pruned, so incremental sync can no longer
+      // guarantee completeness. Tell the client to fall back to a full
+      // `/api/books` refetch instead of silently returning a partial log.
+      if (isResyncRequired(sinceDate)) {
+        return corsJson(request, { resyncRequired: true })
+      }
+      where.createdAt = { gt: sinceDate }
     }
 
     const events = await prisma.syncEvent.findMany({

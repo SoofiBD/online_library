@@ -2,11 +2,24 @@ import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { processImage } from '@/lib/image'
 import { LocalStorageAdapter } from '@/adapters/storage/LocalStorageAdapter'
+import { resolveAuthProvider } from '@/lib/container'
+import { requireValidOrigin } from '@/lib/cors'
+import { isAuthError } from '@/lib/auth/isAuthError'
 
 const MAX_SIZE = 10 * 1024 * 1024
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']
 
 export async function POST(req: NextRequest) {
+  const originError = requireValidOrigin(req)
+  if (originError) return originError
+
+  try {
+    await resolveAuthProvider(req).getCurrentUserId()
+  } catch (error) {
+    if (isAuthError(error)) return NextResponse.json({ error: error.message }, { status: 401 })
+    throw error
+  }
+
   const contentLength = req.headers.get('content-length')
   if (contentLength && parseInt(contentLength, 10) > MAX_SIZE) {
     return NextResponse.json({ error: 'File cannot be larger than 10MB' }, { status: 413 })
