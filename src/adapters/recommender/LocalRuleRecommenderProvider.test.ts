@@ -70,4 +70,49 @@ describe('LocalRuleRecommenderProvider', () => {
     const result = provider.recommend([], candidates, 2)
     expect(result).toHaveLength(2)
   })
+
+  it('scores author average rating even when author is not a favorite', () => {
+    const profile = [
+      book({ id: 'p1', author: 'Author D', rating: 2 }),
+      book({ id: 'p2', author: 'Author D', rating: 3 }),
+    ]
+    const candidates = [
+      book({ id: 'c1', author: 'Author D' }),
+      book({ id: 'c2', author: 'Unknown Author' }),
+    ]
+    const result = provider.recommend(profile, candidates, 10)
+    // Author D has an average rating of 2.5 (both 2 and 3 are below FAVORITE_RATING_THRESHOLD = 4).
+    // This tests the average-rating bonus in isolation, without the favorite-author bonus.
+    // The candidate with the known author should rank higher due to avg-rating contribution alone.
+    expect(result[0].id).toBe('c1')
+    expect(result[0].score).toBeGreaterThan(result[1].score)
+  })
+
+  it('caps the author-match bonus at AUTHOR_MATCH_CAP occurrences', () => {
+    // Profile with exactly AUTHOR_MATCH_CAP (3) favorite books by Author E
+    const profileWithCap = [
+      book({ id: 'p1', author: 'Author E', rating: 5 }),
+      book({ id: 'p2', author: 'Author E', rating: 5 }),
+      book({ id: 'p3', author: 'Author E', rating: 5 }),
+    ]
+
+    // Profile with MORE than AUTHOR_MATCH_CAP (5) favorite books by Author E
+    const profileOverCap = [
+      book({ id: 'p1', author: 'Author E', rating: 5 }),
+      book({ id: 'p2', author: 'Author E', rating: 5 }),
+      book({ id: 'p3', author: 'Author E', rating: 5 }),
+      book({ id: 'p4', author: 'Author E', rating: 5 }),
+      book({ id: 'p5', author: 'Author E', rating: 5 }),
+    ]
+
+    const candidate = book({ id: 'c1', author: 'Author E' })
+
+    const resultWithCap = provider.recommend(profileWithCap, [candidate], 10)
+    const resultOverCap = provider.recommend(profileOverCap, [candidate], 10)
+
+    // Both should have the same score since the author-match contribution is capped at 3.
+    // If the cap is working: score = 3 * min(count, 3) + (5/5) * 2 = 9 + 2 = 11 for both.
+    // If the cap is broken: the second would be 3 * 5 + 2 = 17.
+    expect(resultWithCap[0].score).toBe(resultOverCap[0].score)
+  })
 })
