@@ -1,10 +1,12 @@
 import type { AuthProvider } from '@/adapters/auth/AuthProvider'
 import { DeviceAuthProvider } from '@/adapters/auth/DeviceAuthProvider'
 import { SessionAuthProvider } from '@/adapters/auth/SessionAuthProvider'
+import { LocalRuleRecommenderProvider } from '@/adapters/recommender/LocalRuleRecommenderProvider'
 import { PrismaBookRepository } from '@/adapters/repository/PrismaBookRepository'
 import { LocalStorageAdapter } from '@/adapters/storage/LocalStorageAdapter'
 import { BookService } from '@/services/BookService'
 import { createSearchAggregator } from '@/services/lookup'
+import { RecommendationService } from '@/services/RecommendationService'
 
 export function createBookService(auth: AuthProvider): BookService {
   return new BookService(
@@ -13,6 +15,10 @@ export function createBookService(auth: AuthProvider): BookService {
     new LocalStorageAdapter(),
     createSearchAggregator(),
   )
+}
+
+export function createRecommendationService(auth: AuthProvider): RecommendationService {
+  return new RecommendationService(auth, new PrismaBookRepository(), new LocalRuleRecommenderProvider())
 }
 
 /**
