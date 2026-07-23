@@ -26,14 +26,16 @@ export default async function HomePage({ searchParams }: Props) {
     | 'title'
     | 'rating'
 
+  const showShelves = !params.q && !status
+
   const service = createBookService(new SessionAuthProvider())
   const recommendationService = createRecommendationService(new SessionAuthProvider())
   const discoveryService = createDiscoveryService(new SessionAuthProvider())
   const [books, all, recommendations, discoveries] = await Promise.all([
     service.list({ q: params.q, status, sort }),
     service.list({}),
-    recommendationService.getRecommendations(6),
-    discoveryService.getDiscoveries(8),
+    showShelves ? recommendationService.getRecommendations(6) : Promise.resolve([]),
+    showShelves ? discoveryService.getDiscoveries(8) : Promise.resolve([]),
   ])
 
   const counts: Record<string, number> = {
@@ -66,7 +68,7 @@ export default async function HomePage({ searchParams }: Props) {
               </Link>
             </div>
           </header>
-          {!params.q && !status && (
+          {showShelves && (
             <>
               <RecommendationsShelf recommendations={recommendations} />
               <DiscoverShelf discoveries={discoveries} />

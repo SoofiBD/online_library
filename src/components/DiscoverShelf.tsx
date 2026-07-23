@@ -19,7 +19,7 @@ export default function DiscoverShelf({ discoveries }: { discoveries: Discovered
         {discoveries.map((book) => (
           <Link
             key={book.isbn || `${book.title}-${book.author}`}
-            href={`/books/new?title=${encodeURIComponent(book.title)}&author=${encodeURIComponent(book.author ?? '')}&isbn=${encodeURIComponent(book.isbn)}&cover=${encodeURIComponent(book.coverUrl ?? '')}`}
+            href={`/books/new?title=${encodeURIComponent(book.title)}&author=${encodeURIComponent(book.author ?? '')}&isbn=${encodeURIComponent(book.isbn ?? '')}&cover=${encodeURIComponent(book.coverUrl ?? '')}`}
             className="block no-underline text-[color:var(--color-ink)] bg-[color:var(--color-card)] rounded-[11px] p-4 border border-[color:var(--color-line)] transition-transform hover:-translate-y-0.5 hover:border-[color:var(--color-accent)]"
           >
             <div className="font-serif-display font-medium text-[15px] leading-tight mb-0.5">{book.title}</div>

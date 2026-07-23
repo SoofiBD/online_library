@@ -8,7 +8,7 @@ const FAVORITE_RATING_THRESHOLD = 4
 const MAX_FAVORITE_AUTHORS = 2
 
 export interface DiscoveredBook {
-  isbn: string
+  isbn: string | null
   title: string
   author: string | null
   coverUrl: string | null
@@ -55,7 +55,15 @@ export class DiscoveryService {
         })),
     )
 
-    return this.interleave(deduped).slice(0, limit)
+    const emitted = new Set<string>()
+    return this.interleave(deduped)
+      .filter((book) => {
+        const key = normalize(book.isbn) || `${normalize(book.title)}::${normalize(book.author)}`
+        if (emitted.has(key)) return false
+        emitted.add(key)
+        return true
+      })
+      .slice(0, limit)
   }
 
   private pickFavoriteAuthors(library: BookWithReview[]): string[] {

@@ -76,6 +76,44 @@ describe('DiscoveryService', () => {
     expect(discoveries[0].reason).toBe('More by Author A')
   })
 
+  it('dedupes candidates against each other, not just against the owned library', async () => {
+    const library = [
+      book({ id: 'r1', author: 'Author A', rating: 5 }),
+      book({ id: 'r2', author: 'Author B', rating: 5 }),
+    ]
+    const list = vi.fn(async () => library)
+    const repo = { list } as unknown as BookRepository
+
+    const search = vi.fn(async (q: string) => {
+      if (q === 'Author A') {
+        return [
+          result({ isbn: 'shared-isbn', title: 'Shared Book', author: 'Author A' }),
+          result({ isbn: null as unknown as string, title: 'No Isbn Book', author: 'Author A' }),
+        ]
+      }
+      if (q === 'Author B') {
+        return [
+          // Same ISBN as the "Author A" candidate above, from a different author search.
+          result({ isbn: 'shared-isbn', title: 'Shared Book (again)', author: 'Author A' }),
+          // Same normalized title+author, no isbn, as the "Author A" candidate above.
+          result({ isbn: null as unknown as string, title: 'no isbn book', author: 'author a' }),
+          result({ isbn: 'unique-b', title: 'Unique B', author: 'Author B' }),
+        ]
+      }
+      return []
+    })
+    const aggregator = { search } as unknown as SearchAggregator
+
+    const service = new DiscoveryService(auth, repo, aggregator)
+    const discoveries = await service.getDiscoveries(8)
+
+    expect(discoveries.filter((d) => d.isbn === 'shared-isbn')).toHaveLength(1)
+    expect(discoveries.filter((d) => d.title.toLowerCase() === 'no isbn book')).toHaveLength(1)
+    expect(discoveries.map((d) => d.isbn ?? d.title).sort()).toEqual(
+      ['No Isbn Book', 'shared-isbn', 'unique-b'].sort(),
+    )
+  })
+
   it('skips an author whose search fails, keeping results from the other author', async () => {
     const library = [
       book({ id: 'r1', author: 'Author A', rating: 5 }),
