@@ -1,9 +1,10 @@
 import Link from 'next/link'
 import { Suspense } from 'react'
-import { createBookService, createRecommendationService } from '@/lib/container'
+import { createBookService, createRecommendationService, createDiscoveryService } from '@/lib/container'
 import { SessionAuthProvider } from '@/adapters/auth/SessionAuthProvider'
 import AnimatedBookList from '@/components/AnimatedBookList'
 import RecommendationsShelf from '@/components/RecommendationsShelf'
+import DiscoverShelf from '@/components/DiscoverShelf'
 import SearchFilter from '@/components/SearchFilter'
 import FadeIn from '@/components/FadeIn'
 import ThemeToggle from '@/components/ThemeToggle'
@@ -27,10 +28,12 @@ export default async function HomePage({ searchParams }: Props) {
 
   const service = createBookService(new SessionAuthProvider())
   const recommendationService = createRecommendationService(new SessionAuthProvider())
-  const [books, all, recommendations] = await Promise.all([
+  const discoveryService = createDiscoveryService(new SessionAuthProvider())
+  const [books, all, recommendations, discoveries] = await Promise.all([
     service.list({ q: params.q, status, sort }),
     service.list({}),
     recommendationService.getRecommendations(6),
+    discoveryService.getDiscoveries(8),
   ])
 
   const counts: Record<string, number> = {
@@ -63,7 +66,12 @@ export default async function HomePage({ searchParams }: Props) {
               </Link>
             </div>
           </header>
-          {!params.q && !status && <RecommendationsShelf recommendations={recommendations} />}
+          {!params.q && !status && (
+            <>
+              <RecommendationsShelf recommendations={recommendations} />
+              <DiscoverShelf discoveries={discoveries} />
+            </>
+          )}
           <Suspense>
             <SearchFilter q={params.q} status={params.status} sort={sort} counts={counts} />
           </Suspense>
