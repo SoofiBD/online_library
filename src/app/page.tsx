@@ -1,8 +1,10 @@
 import Link from 'next/link'
 import { Suspense } from 'react'
-import { createBookService } from '@/lib/container'
+import { createBookService, createRecommendationService, createDiscoveryService } from '@/lib/container'
 import { SessionAuthProvider } from '@/adapters/auth/SessionAuthProvider'
 import AnimatedBookList from '@/components/AnimatedBookList'
+import RecommendationsShelf from '@/components/RecommendationsShelf'
+import DiscoverShelf from '@/components/DiscoverShelf'
 import SearchFilter from '@/components/SearchFilter'
 import FadeIn from '@/components/FadeIn'
 import ThemeToggle from '@/components/ThemeToggle'
@@ -24,10 +26,16 @@ export default async function HomePage({ searchParams }: Props) {
     | 'title'
     | 'rating'
 
+  const showShelves = !params.q && !status
+
   const service = createBookService(new SessionAuthProvider())
-  const [books, all] = await Promise.all([
+  const recommendationService = createRecommendationService(new SessionAuthProvider())
+  const discoveryService = createDiscoveryService(new SessionAuthProvider())
+  const [books, all, recommendations, discoveries] = await Promise.all([
     service.list({ q: params.q, status, sort }),
     service.list({}),
+    showShelves ? recommendationService.getRecommendations(6) : Promise.resolve([]),
+    showShelves ? discoveryService.getDiscoveries(8) : Promise.resolve([]),
   ])
 
   const counts: Record<string, number> = {
@@ -47,7 +55,7 @@ export default async function HomePage({ searchParams }: Props) {
                 <span className="w-[30px] h-0.5 bg-[color:var(--color-accent)] inline-block" />
                 <span className="text-[11px] tracking-[3.5px] uppercase text-[color:var(--color-faint)]">Your reading room</span>
               </div>
-              <h1 className="font-serif-display font-semibold text-[clamp(38px,6vw,58px)] leading-none mt-2.5 tracking-[-1px]">Biblio</h1>
+              <h1 className="font-serif-display font-semibold text-[clamp(38px,6vw,58px)] leading-none mt-2.5 tracking-[-1px]">Biblium</h1>
             </div>
             <div className="flex items-center gap-2.5">
               <ThemeToggle />
@@ -60,6 +68,12 @@ export default async function HomePage({ searchParams }: Props) {
               </Link>
             </div>
           </header>
+          {showShelves && (
+            <>
+              <RecommendationsShelf recommendations={recommendations} />
+              <DiscoverShelf discoveries={discoveries} />
+            </>
+          )}
           <Suspense>
             <SearchFilter q={params.q} status={params.status} sort={sort} counts={counts} />
           </Suspense>

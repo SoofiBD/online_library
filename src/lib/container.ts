@@ -5,6 +5,7 @@ import { LocalRuleRecommenderProvider } from '@/adapters/recommender/LocalRuleRe
 import { PrismaBookRepository } from '@/adapters/repository/PrismaBookRepository'
 import { LocalStorageAdapter } from '@/adapters/storage/LocalStorageAdapter'
 import { BookService } from '@/services/BookService'
+import { DiscoveryService } from '@/services/DiscoveryService'
 import { createSearchAggregator } from '@/services/lookup'
 import { RecommendationService } from '@/services/RecommendationService'
 
@@ -19,6 +20,10 @@ export function createBookService(auth: AuthProvider): BookService {
 
 export function createRecommendationService(auth: AuthProvider): RecommendationService {
   return new RecommendationService(auth, new PrismaBookRepository(), new LocalRuleRecommenderProvider())
+}
+
+export function createDiscoveryService(auth: AuthProvider): DiscoveryService {
+  return new DiscoveryService(auth, new PrismaBookRepository(), createSearchAggregator())
 }
 
 /**

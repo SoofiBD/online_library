@@ -1,4 +1,4 @@
-# Biblio — Personal Library
+# Biblium — Personal Library
 
 A self-hosted web app for managing your own book collection. It stores each book's photo, title, author, and your notes/rating. Clone it from GitHub, install, and run — your database stays on your own machine. You can also reach it from your phone on the same network to add or edit books.
 

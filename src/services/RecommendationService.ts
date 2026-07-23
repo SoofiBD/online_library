@@ -13,11 +13,15 @@ export class RecommendationService {
 
   async getRecommendations(limit: number = DEFAULT_LIMIT): Promise<ScoredBook[]> {
     const ownerId = await this.auth.getCurrentUserId()
-    const [profileBooks, candidates] = await Promise.all([
+    const [readBooks, wantToRead] = await Promise.all([
       this.repo.list(ownerId, { status: 'READ' }),
       this.repo.list(ownerId, { status: 'WANT_TO_READ' }),
     ])
-    const ratedProfileBooks = profileBooks.filter((b) => b.rating != null)
+    const ratedProfileBooks = readBooks.filter((b) => b.rating != null)
+    // Unrated READ books haven't fed the taste profile yet, so they're still
+    // worth scoring as candidates alongside WANT_TO_READ (e.g. re-reads).
+    const unratedReadBooks = readBooks.filter((b) => b.rating == null)
+    const candidates = [...wantToRead, ...unratedReadBooks]
     return this.provider.recommend(ratedProfileBooks, candidates, limit)
   }
 }
