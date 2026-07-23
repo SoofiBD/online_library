@@ -15,7 +15,7 @@ const hanken = Hanken_Grotesk({
 })
 
 export const metadata: Metadata = {
-  title: 'Biblio',
+  title: 'Biblium',
   description: 'Your reading room',
 }
 
