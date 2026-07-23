@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import BookForm from '@/components/BookForm'
 import BookSearchDialog from '@/components/BookSearchDialog'
 import { createBook } from '@/actions/books'
@@ -18,7 +19,29 @@ interface Candidate {
 }
 
 export default function NewBookPage() {
-  const [prefill, setPrefill] = useState<Candidate | null>(null)
+  return (
+    <Suspense fallback={null}>
+      <NewBookPageInner />
+    </Suspense>
+  )
+}
+
+function NewBookPageInner() {
+  const searchParams = useSearchParams()
+  const queryPrefill = (() => {
+    const title = searchParams.get('title')
+    if (!title) return null
+    return {
+      isbn: searchParams.get('isbn') ?? '',
+      title,
+      author: searchParams.get('author'),
+      publisher: null,
+      publishedYear: null,
+      coverUrl: searchParams.get('cover'),
+      source: 'discovery',
+    } as Candidate
+  })()
+  const [prefill, setPrefill] = useState<Candidate | null>(queryPrefill)
 
   return (
     <div className="px-[clamp(14px,4vw,40px)] pt-[clamp(18px,4vw,46px)] pb-[90px]">
